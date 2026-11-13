@@ -4,7 +4,7 @@
 
 - 当前阶段：阶段 2（API 自动化最小闭环）
 - 更新时间：2026-11-13
-- 状态：阶段一已完成；阶段二第一节课正在进行，学习者将手动实现统一 API 客户端
+- 状态：阶段二前两节课已完成，第二节课已经学习者确认；第三节课准备实现鉴权 service
 
 ## 项目目标
 
@@ -74,12 +74,25 @@
   - `uv lock --check` 通过；顶层开发依赖为 pytest 9.2.0 与 pytest-html 4.2.0。
   - `reports/report.html` 已确认被 `.gitignore` 排除。
 - 阶段一代码与锁文件已提交：`2dc7aa4 搭建阶段一pytest自动化框架`。
+- 阶段二第一节课已完成：
+  - 在 `automation/` 中新增运行时依赖 `httpx>=0.28.1` 并更新 `uv.lock`。
+  - 创建 `automation/core/__init__.py`，公开 `APIClient`。
+  - 创建 `automation/core/api_client.py`，实现 base_url、超时、默认请求头、常用 HTTP 方法和请求响应耗时日志。
+  - 验证 `/openapi.json` 返回 200，未授权 `/api/orders` 返回 401 且响应可被调用方检查。
+  - 阶段一原有 12 条测试保持通过。
+  - 已提交为 `877f675 完成基础 APIClient 类`。
+- 阶段二第二节课已完成并经学习者确认：
+  - 创建 `automation/core/exceptions.py`，包含 `AutomationError`、`APIClientError` 与 `APITransportError`。
+  - 创建 `automation/core/logger.py`，统一 `automation.*` logger、输出格式与敏感字段递归脱敏。
+  - 改造 `APIClient` 使用统一 logger，并把 httpx 传输错误转换为 `APITransportError`。
+  - 更新 `core/__init__.py` 导出客户端、异常、日志配置和脱敏函数。
+  - 确认 4xx/5xx HTTP 响应仍原样返回，网络传输失败才抛框架异常。
 
 ## 待办
 
-- 在 `automation/` 中安装并锁定 httpx。
-- 创建 `automation/core/__init__.py` 与 `automation/core/api_client.py`。
-- 启动被测系统并验证 base_url、超时、默认请求头与请求响应日志。
+- 清理 Git 暂存区中已从工作区删除的临时 `automation/check_core.py`。
+- 删除误生成在项目根目录的未跟踪文件 `$null`。
+- 扩展 `APIResponseError`，创建 `automation/services/__init__.py` 与 `automation/services/auth_service.py`。
 
 ## 项目结构快照
 
@@ -99,12 +112,14 @@
 - Codex 当前终端的 PATH 尚未识别 `uv`；实际执行时可使用 uv 的显式安装路径，或由学习者在自己的新 PowerShell 中执行。
 - 在 `automation/` 中直接执行 `pytest` 会命中全局 Python 3.11 的 pytest 8.4.2，未加载项目 `.venv` 中的 pytest-html；应使用 `uv run pytest` 或项目的虚拟环境解释器。
 - `automation/pyproject.toml` 声明 `requires-python = ">=3.11"`；uv 当前为独立环境选择了 Python 3.12.14，这与根目录被测系统的 Python 3.11.5 环境相互隔离。
+- 当前 Git 暂存区残留 `automation/check_core.py` 的添加记录，而工作区文件已删除；提交前必须执行 `git restore --staged automation/check_core.py`。
+- 项目根目录存在误生成的未跟踪文件 `$null`，提交前应删除。
 
 ## 下一步计划
 
-1. 阶段二第一节课实现统一 API 客户端，收口 base_url、超时、请求头和响应日志。
-2. 下一课实现 `core/logger.py` 与 `core/exceptions.py`，把日志和异常从客户端中解耦。
-3. 随后实现鉴权与订单 service，再由 API 用例验证完整业务闭环。
+1. 清理临时文件与 Git 暂存状态。
+2. 实现 `services/auth_service.py`，封装注册、登录和成功登录后的 token 获取。
+3. 下一课实现订单 service，再由正式 API 用例验证鉴权与订单业务闭环。
 
 ## 重要变更
 
@@ -122,4 +137,6 @@
 - 阶段一形成 12 条通过的 pytest 测试项，具备 fixture、参数化、marker、筛选和 HTML 报告能力。
 - `AGENTS.md` 新增后续阶段“仅指导、不代做”固定规则，并明确 `docs/project-memory.md` 仍由 AI 持续维护。
 - 阶段一收尾提交：`d53f800 补充后续阶段不代做教学规则`。
-- 阶段二第一节课开始：计划引入 httpx，并建立统一 API 客户端；由学习者手动创建与验证。
+- 阶段二第一节课完成：新增 httpx、统一 `APIClient` 与 core 包入口，提交为 `877f675`。
+- 阶段二第二节课完成：把日志配置、敏感信息脱敏和异常层次从 API 客户端中解耦；学习者确认通过。
+- 阶段二第三节课开始：扩展 API 响应异常并建立 `services` 业务服务层。

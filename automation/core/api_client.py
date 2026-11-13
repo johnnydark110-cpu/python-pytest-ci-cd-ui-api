@@ -1,4 +1,4 @@
-import logging
+
 from collections.abc import Mapping
 from time import perf_counter
 from types import TracebackType
@@ -6,9 +6,12 @@ from typing import Any
 
 import httpx
 
+from .exceptions import APITransportError
+from .logger import get_logger
+
 """统一封装 HTTP 请求的基础 API 客户端。"""
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 DEFAULT_BASE_URL = "http://127.0.0.1:8000"
 DEFAULT_TIMEOUT_SECONDS = 10.0
 
@@ -43,14 +46,10 @@ class APIClient:
         """发送请求并记录请求与响应的关键信息。"""
         normalized_path = f"/{path.lstrip('/')}"
         method = method.upper()
+        request_url = f"{self.base_url}{normalized_path}"
         started_at = perf_counter()
 
-        logger.info(
-            "API request %s %s%s",
-            method,
-            self.base_url,
-            normalized_path
-        )
+        logger.info("API request %s %s", method, request_url)
 
         request_options: dict[str, Any] = {}
         if params is not None:
@@ -66,14 +65,17 @@ class APIClient:
                 normalized_path,
                 **request_options,
             )
-        except httpx.HTTPError:
+        except httpx.HTTPError as exc:
             logger.exception(
-                "API request failed %s %s%s",
+                "API request failed %s %s",
                 method,
-                self.base_url,
-                normalized_path,
+                request_url,
             )
-            raise
+            raise APITransportError(
+                method=method,
+                url=request_url,
+                cause=exc,
+            ) from exc
         elapsed_ms = (perf_counter() - started_at) * 1000
         logger.info(
             "API response %s %s -> %s (%.2f ms)",
