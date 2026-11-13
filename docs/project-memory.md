@@ -43,6 +43,7 @@
 ## 已知问题
 
 - `uv` 的 PATH 修改只对本次修改之后新开的终端生效；旧终端需要重开后才能直接执行 `uv`。
+- PowerShell 若提示脚本被禁用，按 README 中的执行策略说明使用 `Process Bypass` 或 `CurrentUser RemoteSigned`。
 - 浏览器端完整流程验收仍待学习者确认。
 
 ## 下一步计划

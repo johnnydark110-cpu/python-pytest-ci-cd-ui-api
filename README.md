@@ -44,6 +44,29 @@ Windows（PowerShell）：
 .\start.ps1
 ```
 
+如果提示 “running scripts is disabled on this system”，说明当前 PowerShell 窗口的执行策略为 `Restricted`。在当前窗口执行：
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\start.ps1
+```
+
+`Process` 作用域只影响当前窗口，关闭窗口后自动恢复。
+
+也可以一次性启动：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1
+```
+
+如需让新开的普通 PowerShell 窗口都能直接运行本地脚本：
+
+```powershell
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned
+```
+
+设置后关闭并重开终端。`RemoteSigned` 允许本地脚本运行，从网络下载的脚本仍需签名。
+
 macOS / Linux：
 
 ```bash
