@@ -4,7 +4,7 @@
 
 - 当前阶段：阶段 2（API 自动化最小闭环）
 - 更新时间：2026-11-13
-- 状态：阶段二前两节课已完成，第二节课已经学习者确认；第三节课准备实现鉴权 service
+- 状态：阶段二前三节课已完成，鉴权 service 已经学习者确认；第四节课准备实现订单 service
 
 ## 项目目标
 
@@ -87,12 +87,17 @@
   - 改造 `APIClient` 使用统一 logger，并把 httpx 传输错误转换为 `APITransportError`。
   - 更新 `core/__init__.py` 导出客户端、异常、日志配置和脱敏函数。
   - 确认 4xx/5xx HTTP 响应仍原样返回，网络传输失败才抛框架异常。
+- 阶段二第三节课已完成并经学习者确认：
+  - 扩展 `APIResponseError`，保留非预期 HTTP 状态码和响应体。
+  - 创建并导出 `automation/services/auth_service.py` 中的 `AuthService`。
+  - `register()` 与 `login()` 返回原始 `httpx.Response`，便于测试 201、401、409、422。
+  - `get_token()` 校验 200、JSON 对象和非空 token，失败时抛 `APIResponseError`。
+  - 通过真实注册、登录、错误密码和 token 获取流程完成验证。
 
 ## 待办
 
-- 清理 Git 暂存区中已从工作区删除的临时 `automation/check_core.py`。
-- 删除误生成在项目根目录的未跟踪文件 `$null`。
-- 扩展 `APIResponseError`，创建 `automation/services/__init__.py` 与 `automation/services/auth_service.py`。
+- 创建 `automation/services/order_service.py` 并更新服务层导出。
+- 为创建、详情、列表、修改和删除订单提供统一 Bearer 鉴权与业务方法。
 
 ## 项目结构快照
 
@@ -112,14 +117,14 @@
 - Codex 当前终端的 PATH 尚未识别 `uv`；实际执行时可使用 uv 的显式安装路径，或由学习者在自己的新 PowerShell 中执行。
 - 在 `automation/` 中直接执行 `pytest` 会命中全局 Python 3.11 的 pytest 8.4.2，未加载项目 `.venv` 中的 pytest-html；应使用 `uv run pytest` 或项目的虚拟环境解释器。
 - `automation/pyproject.toml` 声明 `requires-python = ">=3.11"`；uv 当前为独立环境选择了 Python 3.12.14，这与根目录被测系统的 Python 3.11.5 环境相互隔离。
-- 当前 Git 暂存区残留 `automation/check_core.py` 的添加记录，而工作区文件已删除；提交前必须执行 `git restore --staged automation/check_core.py`。
-- 项目根目录存在误生成的未跟踪文件 `$null`，提交前应删除。
+- PyCharm 当前可能把 `from core import APIClient, APIResponseError` 标红，因为尚未把 `automation/` 标记为 Sources Root；该问题需以 `uv run python` 的实际导入结果为准，不应安装名为 `APIClient` 的包。
+- `auth_service.py` 中存在未使用的 `NoReturn` 导入，仅为静态检查提示，不影响运行，可在下一课顺手清理。
 
 ## 下一步计划
 
-1. 清理临时文件与 Git 暂存状态。
-2. 实现 `services/auth_service.py`，封装注册、登录和成功登录后的 token 获取。
-3. 下一课实现订单 service，再由正式 API 用例验证鉴权与订单业务闭环。
+1. 实现 `services/order_service.py`，封装订单创建、详情、列表、修改和删除。
+2. 下一课在 `conftest.py` 提供 base_url、API client 和登录 token fixture。
+3. 随后编写正式 `tests/api/test_auth.py` 与 `tests/api/test_order.py`。
 
 ## 重要变更
 
@@ -139,4 +144,5 @@
 - 阶段一收尾提交：`d53f800 补充后续阶段不代做教学规则`。
 - 阶段二第一节课完成：新增 httpx、统一 `APIClient` 与 core 包入口，提交为 `877f675`。
 - 阶段二第二节课完成：把日志配置、敏感信息脱敏和异常层次从 API 客户端中解耦；学习者确认通过。
-- 阶段二第三节课开始：扩展 API 响应异常并建立 `services` 业务服务层。
+- 阶段二第三节课完成：新增 `APIResponseError`、`services` 包和 `AuthService`；学习者确认通过。
+- 阶段二第四节课开始：建立 `OrderService`，把鉴权 header 与订单 CRUD 细节集中到服务层。
