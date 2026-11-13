@@ -1,0 +1,4 @@
+-r requirements-app.txt
+
+# 本地冒烟自测 work/smoke_test.py 需要 TestClient 依赖的 HTTP 客户端
+httpx>=0.28,<1.0

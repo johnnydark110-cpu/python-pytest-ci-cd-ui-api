@@ -20,6 +20,14 @@ function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (char) => map[char]);
 }
 
+function formatErrorDetail(detail) {
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail.map((item) => item.msg || JSON.stringify(item)).join("；");
+  }
+  return "请求失败";
+}
+
 function authHeaders() {
   return {
     "Content-Type": "application/json",
@@ -54,7 +62,7 @@ async function submitAuth(event) {
   }
   if (!response.ok) {
     $("auth-message").textContent =
-      typeof data.detail === "string" ? data.detail : "请求失败";
+      formatErrorDetail(data.detail);
     return;
   }
   localStorage.setItem(TOKEN_KEY, data.token);
@@ -120,7 +128,7 @@ async function submitOrder(event) {
   });
   if (!response.ok) {
     const data = await response.json().catch(() => ({}));
-    alert(typeof data.detail === "string" ? data.detail : "请求失败");
+    alert(formatErrorDetail(data.detail));
     return;
   }
   resetOrderForm();

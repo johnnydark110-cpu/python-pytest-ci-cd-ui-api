@@ -10,6 +10,32 @@
 
 订单管理系统提供用户注册、登录，以及订单的新增、查询、分页搜索、修改、删除，并包含完整的成功与失败场景，供 UI 和 API 自动化练习。
 
+### 环境准备（首次）
+
+项目使用 `uv` 管理依赖，被测系统运行在根目录的 `venv/` 虚拟环境中。
+
+```powershell
+# 1. 确认 uv 可用；如果提示找不到命令，重新打开终端再试
+uv --version
+
+# 2. 首次创建虚拟环境（已有 venv/ 时跳过）
+uv venv venv --python 3.11
+
+# 3. 安装锁定依赖
+uv pip install --python venv\Scripts\python.exe -r requirements-dev.lock
+
+# 4. 验证依赖
+venv\Scripts\python.exe -c "import fastapi, uvicorn, httpx; print('依赖就绪')"
+```
+
+macOS / Linux 将第 3、4 步中的 `venv\Scripts\python.exe` 换成 `venv/bin/python` 即可。
+
+依赖文件说明：
+
+- `requirements-app.txt`：被测系统的运行时依赖。
+- `requirements-dev.txt`：额外包含冒烟自测需要的 `httpx`。
+- `requirements-dev.lock`：由 `uv` 生成的实际版本锁文件，安装时以它为准。
+
 ### 快速开始
 
 Windows（PowerShell）：

@@ -21,6 +21,11 @@
   - 启动脚本：`start.ps1`、`start.sh`。
 - 通过冒烟自测脚本 `work/smoke_test.py` 验证前后端核心流程。
 - git 仓库已初始化并完成首次提交（提交信息：`接触骨架搭建`）。
+- 环境工具链已修复：
+  - 发现本机已有 `uv 0.12.9`，但 `C:\Users\Administrator\.local\bin` 未加入用户 PATH，已加入（新终端生效）。
+  - 使用 uv 将依赖安装到根目录 `venv/`，不再依赖全局 Python。
+  - 新增 `requirements-dev.txt`（运行时依赖 + 冒烟自测所需 httpx）与锁文件 `requirements-dev.lock`。
+  - `start.ps1`、`start.sh` 已改为优先使用 `venv/`，缺失时回退到全局 `python`。
 
 ## 待办
 
@@ -37,9 +42,16 @@
 
 ## 已知问题
 
-- 无。
+- `uv` 的 PATH 修改只对本次修改之后新开的终端生效；旧终端需要重开后才能直接执行 `uv`。
+- 浏览器端完整流程验收仍待学习者确认。
 
 ## 下一步计划
 
-1. 学习者按阶段 0 验收清单自查。
-2. 确认通过后，进入阶段一：初始化 `automation/` 环境与工具链。
+1. 学习者在浏览器中完成阶段 0 最后一项验收。
+2. 确认通过后，进入阶段一：初始化 `automation/` 环境与工具链（uv 已就绪）。
+
+## 重要变更
+
+- 新增依赖文件：`requirements-dev.txt`、`requirements-dev.lock`。
+- 启动脚本改为自动选择 `venv/` 中的解释器。
+- 被测系统依赖已锁定，环境可复现。
