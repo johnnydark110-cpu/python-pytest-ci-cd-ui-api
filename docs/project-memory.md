@@ -2,9 +2,9 @@
 
 ## 当前状态
 
-- 当前阶段：阶段 2（API 自动化最小闭环）
+- 当前阶段：阶段 3（数据驱动、配置与报告）
 - 更新时间：2026-11-13
-- 状态：阶段二前七节课已完成，订单 API 用例已经学习者确认；准备完成阶段二最后的失败诊断加固
+- 状态：阶段三第一节课已完成并经学习者确认；第二节课准备创建正式 dev/staging 配置文件
 
 ## 项目目标
 
@@ -118,12 +118,26 @@
   - 覆盖零金额、负金额和非法状态的 422 响应。
   - 订单专项 9 passed；API 中共 16 条用例；完整测试 28 passed；`-m regression` 27 passed、1 deselected。
   - 已提交为 `e2c45f7 添加订单的API测试用例`。
+- 阶段二第八节课与阶段验收已完成并经学习者确认：
+  - `logger.py` 新增 `format_log_data()`，统一脱敏并格式化多行 JSON。
+  - `APIClient` 记录请求方法、URL、查询参数、有效请求头、请求体、响应状态、响应头、响应体和耗时。
+  - 密码、token、Authorization、Cookie 等敏感字段统一显示为 `***REDACTED***`。
+  - 通过故意失败的临时用例确认 pytest 会展示完整请求响应上下文，随后已删除临时测试。
+  - 阶段二验收结果：API 16 passed、全套 28 passed、regression 27 passed、1 deselected。
+  - 已提交为 `3d32010 增加日志数据格式化函数 记录完整请求和响应`。
+- 阶段三第一节课已完成并经学习者确认：
+  - 安装并锁定 `pydantic-settings 2.16.3` 与 PyYAML。
+  - 创建 `automation/config/settings.py` 与 `config/__init__.py`。
+  - `Settings` 支持 `environment`、`base_url`、`timeout_seconds`、`verify_ssl` 类型校验。
+  - `from_yaml()` 支持缺失文件、非对象 YAML、未知字段和非法类型的明确错误。
+  - 支持 `AUTOMATION_ENVIRONMENT`、`AUTOMATION_BASE_URL`、`AUTOMATION_TIMEOUT_SECONDS`、`AUTOMATION_VERIFY_SSL` 环境变量覆盖。
+  - 验证合法 YAML、非法 YAML 和 URL 规范化行为；`AnyHttpUrl` 的字符串形式会补根路径 `/`。
 
 ## 待办
 
-- 扩展日志格式化能力，在请求和响应日志中输出经过脱敏的完整上下文。
-- 改造 `APIClient` 记录请求方法、URL、参数、请求头、请求体、响应状态、响应头和响应体。
-- 通过故意失败的临时 API 用例，确认 pytest 失败输出包含完整请求响应上下文。
+- 清理 Git 暂存区中已从工作区删除的 `check_settings.py`、`verify.yaml`、`verify-invalid.yaml`。
+- 创建正式 `automation/config/dev.yaml` 与 `automation/config/staging.yaml`。
+- 分别加载两份配置并验证环境名、基础地址、超时和 SSL 配置。
 
 ## 项目结构快照
 
@@ -143,13 +157,14 @@
 - Codex 当前终端的 PATH 尚未识别 `uv`；实际执行时可使用 uv 的显式安装路径，或由学习者在自己的新 PowerShell 中执行。
 - 在 `automation/` 中直接执行 `pytest` 会命中全局 Python 3.11 的 pytest 8.4.2，未加载项目 `.venv` 中的 pytest-html；应使用 `uv run pytest` 或项目的虚拟环境解释器。
 - `automation/pyproject.toml` 声明 `requires-python = ">=3.11"`；uv 当前为独立环境选择了 Python 3.12.14，这与根目录被测系统的 Python 3.11.5 环境相互隔离。
-- PyCharm 当前可能把 `from core import APIClient, APIResponseError` 标红，因为尚未把 `automation/` 标记为 Sources Root；该问题需以 `uv run python` 的实际导入结果为准，不应安装名为 `APIClient` 的包。
+- PyCharm 当前可能把 `core`、`services`、`pydantic_settings` 等导入标红，因为源码根目录或解释器尚未正确配置；必须选择 `automation/.venv/Scripts/python.exe` 并把 `automation/` 标记为 Sources Root，以 `uv run python` 的实际导入结果为准，不应安装名为 `APIClient` 的包。
+- Pydantic `AnyHttpUrl` 会把无路径 URL 规范化为带根路径 `/` 的形式；比较 URL 时应使用 `str(settings.base_url).rstrip("/")`，不能要求其字符串不带末尾 `/`。
 
 ## 下一步计划
 
-1. 完成脱敏后的完整请求响应日志，并验证故意失败时 pytest 能展示上下文。
-2. 阶段二全部验收通过后，进入阶段三：数据驱动、配置与报告。
-3. 阶段三先建立环境配置模型，再接入测试数据参数化与 Allure。
+1. 创建 `dev.yaml` 与 `staging.yaml`，明确本地开发环境和本地模拟 staging 环境的配置差异。
+2. 下一课在 `conftest.py` 中增加 `--env` 命令行参数，并用它选择配置文件。
+3. 随后建立 YAML 测试数据参数化和 Allure 报告。
 
 ## 重要变更
 
@@ -174,4 +189,6 @@
 - 阶段二第五节课完成：把 base_url、客户端、登录用户、token 与订单服务接入 `conftest.py`；学习者确认通过。
 - 阶段二第六节课完成：新增 7 条正式鉴权 API 用例并通过专项、全套和 marker 回归。
 - 阶段二第七节课完成：新增 9 个订单 API 测试项并完成订单、鉴权、用户隔离验收；提交为 `e2c45f7`。
-- 阶段二第八节课开始：补强失败诊断日志与敏感信息脱敏后的请求响应上下文。
+- 阶段二第八节课完成：实现脱敏后的完整请求响应日志，提交为 `3d32010`；阶段二全部验收通过。
+- 阶段三第一节课完成：新增 `pydantic-settings`、PyYAML、类型安全 `Settings` 与 YAML 加载器；学习者确认通过。
+- 阶段三第二节课开始：创建正式开发与预发布配置文件。
