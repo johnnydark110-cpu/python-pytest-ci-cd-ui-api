@@ -4,7 +4,7 @@
 
 - 当前阶段：阶段 2（API 自动化最小闭环）
 - 更新时间：2026-11-13
-- 状态：阶段二前三节课已完成，鉴权 service 已经学习者确认；第四节课准备实现订单 service
+- 状态：阶段二前五节课已完成，API fixtures 已经学习者确认；第六节课准备编写正式鉴权 API 用例
 
 ## 项目目标
 
@@ -93,11 +93,26 @@
   - `register()` 与 `login()` 返回原始 `httpx.Response`，便于测试 201、401、409、422。
   - `get_token()` 校验 200、JSON 对象和非空 token，失败时抛 `APIResponseError`。
   - 通过真实注册、登录、错误密码和 token 获取流程完成验证。
+  - 鉴权、异常与客户端相关提交为 `11562b1`。
+- 阶段二第四节课已完成并经学习者确认：
+  - 创建 `automation/services/order_service.py`，统一携带 Bearer token。
+  - 实现 `create_order()`、`get_order()`、`list_orders()`、`update_order()`、`delete_order()`。
+  - 所有订单方法返回原始 `httpx.Response`，便于验证 201、200、204、401、404 和 422。
+  - 验证新增、详情、搜索列表、修改、未授权、删除及删除后 404 的完整流程。
+  - 服务层导出同时包含 `AuthService` 与 `OrderService`。
+  - 已提交为 `1f78b61 添加orderservice.py模块`。
+- 阶段二第五节课已完成并经学习者确认：
+  - `conftest.py` 新增 session 级 `base_url`、`api_client`、`auth_service` fixture。
+  - 新增 function 级 `auth_user`、`token`、`order_service` fixture。
+  - `base_url` 支持通过 `API_BASE_URL` 环境变量切换环境。
+  - `api_client` 复用会话连接池并通过上下文管理器关闭。
+  - `auth_user` 使用随机用户名隔离测试数据；`token` 自动注册并登录。
+  - 临时 wiring 测试验证真实鉴权与订单列表访问通过，随后已从工作区删除。
 
 ## 待办
 
-- 创建 `automation/services/order_service.py` 并更新服务层导出。
-- 为创建、详情、列表、修改和删除订单提供统一 Bearer 鉴权与业务方法。
+- 清理 Git 暂存区中已从工作区删除的临时 `automation/tests/test_api_fixture_wiring.py`。
+- 创建 `automation/tests/api/test_auth.py`，覆盖注册、登录、重复用户名、错误密码、参数校验和 token 鉴权。
 
 ## 项目结构快照
 
@@ -118,13 +133,13 @@
 - 在 `automation/` 中直接执行 `pytest` 会命中全局 Python 3.11 的 pytest 8.4.2，未加载项目 `.venv` 中的 pytest-html；应使用 `uv run pytest` 或项目的虚拟环境解释器。
 - `automation/pyproject.toml` 声明 `requires-python = ">=3.11"`；uv 当前为独立环境选择了 Python 3.12.14，这与根目录被测系统的 Python 3.11.5 环境相互隔离。
 - PyCharm 当前可能把 `from core import APIClient, APIResponseError` 标红，因为尚未把 `automation/` 标记为 Sources Root；该问题需以 `uv run python` 的实际导入结果为准，不应安装名为 `APIClient` 的包。
-- `auth_service.py` 中存在未使用的 `NoReturn` 导入，仅为静态检查提示，不影响运行，可在下一课顺手清理。
+- 当前 Git 暂存区残留 `automation/tests/test_api_fixture_wiring.py` 的添加记录，而工作区文件已删除；提交前必须执行 `git restore --staged automation/tests/test_api_fixture_wiring.py`。
 
 ## 下一步计划
 
-1. 实现 `services/order_service.py`，封装订单创建、详情、列表、修改和删除。
-2. 下一课在 `conftest.py` 提供 base_url、API client 和登录 token fixture。
-3. 随后编写正式 `tests/api/test_auth.py` 与 `tests/api/test_order.py`。
+1. 编写正式 `tests/api/test_auth.py`，覆盖注册、登录和 token 鉴权。
+2. 下一课编写 `tests/api/test_order.py`，覆盖订单 CRUD、分页搜索和失败场景。
+3. 完成后执行完整的 API 回归与报告验收。
 
 ## 重要变更
 
@@ -145,4 +160,6 @@
 - 阶段二第一节课完成：新增 httpx、统一 `APIClient` 与 core 包入口，提交为 `877f675`。
 - 阶段二第二节课完成：把日志配置、敏感信息脱敏和异常层次从 API 客户端中解耦；学习者确认通过。
 - 阶段二第三节课完成：新增 `APIResponseError`、`services` 包和 `AuthService`；学习者确认通过。
-- 阶段二第四节课开始：建立 `OrderService`，把鉴权 header 与订单 CRUD 细节集中到服务层。
+- 阶段二第四节课完成：建立 `OrderService`，把鉴权 header 与订单 CRUD 细节集中到服务层；提交为 `1f78b61`。
+- 阶段二第五节课完成：把 base_url、客户端、登录用户、token 与订单服务接入 `conftest.py`；学习者确认通过。
+- 阶段二第六节课开始：编写正式鉴权 API 用例并验证 fixture、服务层、状态码和错误响应。
