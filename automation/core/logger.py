@@ -1,4 +1,8 @@
 """统一日志配置与敏感数据脱敏。"""
+
+from __future__ import annotations
+
+import json
 import logging
 from collections.abc import Mapping
 from typing import Any
@@ -24,6 +28,7 @@ _SENSITIVE_KEYS = frozenset(
 
 
 def configure_logging(level: int | str = logging.INFO) -> None:
+    """配置测试框架统一日志；重复调用不会添加重复 handler。"""
     package_logger = logging.getLogger(PACKAGE_LOGGER_NAME)
     package_logger.setLevel(level)
     package_logger.propagate = False
@@ -72,3 +77,14 @@ def redact_data(value: Any) -> Any:
         return tuple(redact_data(item) for item in value)
 
     return value
+
+
+def format_log_data(value: Any) -> str:
+    """先脱敏，再格式化为便于排错的多行 JSON。"""
+    redacted = redact_data(value)
+    return json.dumps(
+        redacted,
+        ensure_ascii=False,
+        indent=2,
+        default=str,
+    )
