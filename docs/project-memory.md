@@ -4,7 +4,7 @@
 
 - 当前阶段：阶段 2（API 自动化最小闭环）
 - 更新时间：2026-11-13
-- 状态：阶段二前五节课已完成，API fixtures 已经学习者确认；第六节课准备编写正式鉴权 API 用例
+- 状态：阶段二前六节课已完成，鉴权 API 用例已经学习者确认；第七节课准备编写订单 API 用例
 
 ## 项目目标
 
@@ -108,11 +108,16 @@
   - `api_client` 复用会话连接池并通过上下文管理器关闭。
   - `auth_user` 使用随机用户名隔离测试数据；`token` 自动注册并登录。
   - 临时 wiring 测试验证真实鉴权与订单列表访问通过，随后已从工作区删除。
+- 阶段二第六节课已完成并经学习者确认：
+  - 创建 `automation/tests/api/test_auth.py`，模块标记为 `regression`。
+  - 覆盖注册成功、重复用户名、登录成功、错误密码、参数校验失败、有效 token 和无效 token。
+  - 鉴权专项测试 7 passed；全套测试 19 passed；`-m regression` 18 passed。
+  - 所有 API 请求均通过 `AuthService` 或 `OrderService`，测试中未出现裸 HTTP 调用。
 
 ## 待办
 
-- 清理 Git 暂存区中已从工作区删除的临时 `automation/tests/test_api_fixture_wiring.py`。
-- 创建 `automation/tests/api/test_auth.py`，覆盖注册、登录、重复用户名、错误密码、参数校验和 token 鉴权。
+- 创建 `automation/tests/api/test_order.py`，覆盖订单创建、详情、分页搜索、修改、删除和失败场景。
+- 验证不同用户之间的订单隔离。
 
 ## 项目结构快照
 
@@ -133,13 +138,12 @@
 - 在 `automation/` 中直接执行 `pytest` 会命中全局 Python 3.11 的 pytest 8.4.2，未加载项目 `.venv` 中的 pytest-html；应使用 `uv run pytest` 或项目的虚拟环境解释器。
 - `automation/pyproject.toml` 声明 `requires-python = ">=3.11"`；uv 当前为独立环境选择了 Python 3.12.14，这与根目录被测系统的 Python 3.11.5 环境相互隔离。
 - PyCharm 当前可能把 `from core import APIClient, APIResponseError` 标红，因为尚未把 `automation/` 标记为 Sources Root；该问题需以 `uv run python` 的实际导入结果为准，不应安装名为 `APIClient` 的包。
-- 当前 Git 暂存区残留 `automation/tests/test_api_fixture_wiring.py` 的添加记录，而工作区文件已删除；提交前必须执行 `git restore --staged automation/tests/test_api_fixture_wiring.py`。
 
 ## 下一步计划
 
-1. 编写正式 `tests/api/test_auth.py`，覆盖注册、登录和 token 鉴权。
-2. 下一课编写 `tests/api/test_order.py`，覆盖订单 CRUD、分页搜索和失败场景。
-3. 完成后执行完整的 API 回归与报告验收。
+1. 编写 `tests/api/test_order.py`，覆盖订单 CRUD、分页搜索和失败场景。
+2. 执行 API 全套测试与 HTML 报告验收。
+3. 下一课补强日志和失败上下文，让失败用例能看到经过脱敏的请求响应信息。
 
 ## 重要变更
 
@@ -162,4 +166,5 @@
 - 阶段二第三节课完成：新增 `APIResponseError`、`services` 包和 `AuthService`；学习者确认通过。
 - 阶段二第四节课完成：建立 `OrderService`，把鉴权 header 与订单 CRUD 细节集中到服务层；提交为 `1f78b61`。
 - 阶段二第五节课完成：把 base_url、客户端、登录用户、token 与订单服务接入 `conftest.py`；学习者确认通过。
-- 阶段二第六节课开始：编写正式鉴权 API 用例并验证 fixture、服务层、状态码和错误响应。
+- 阶段二第六节课完成：新增 7 条正式鉴权 API 用例并通过专项、全套和 marker 回归。
+- 阶段二第七节课开始：新增订单 CRUD、分页搜索和用户隔离用例。
