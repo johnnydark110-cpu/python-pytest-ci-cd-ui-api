@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# 被测系统运行时数据
+app/data/
+*.db
+*.sqlite3
+
+# 自动化测试产物
+.pytest_cache/
+htmlcov/
+allure-results/
+reports/
+logs/
+screenshots/
+
+# 环境与密钥
+.env
+config/*.local.yaml
+
+# IDE 与系统文件
+.idea/
+.vscode/
+.DS_Store
