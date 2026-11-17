@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import allure
 import httpx
 
 from core import APIClient
@@ -22,9 +23,9 @@ class OrderService:
         self.api_client = api_client
         self.token = normalized_token
 
+    @allure.step("创建订单")
     def create_order(
         self,
-
         title: str,
         amount: float,
         status: str = "pending",

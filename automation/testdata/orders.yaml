@@ -1,0 +1,41 @@
+- id: standard-pending
+  title: YAML 标准待处理订单
+  amount: 99.5
+  status: pending
+  expected_status: 201
+  expected_error_field: null
+
+- id: minimum-positive-amount
+  title: YAML 最小正金额订单
+  amount: 0.01
+  status: paid
+  expected_status: 201
+  expected_error_field: null
+
+- id: completed-order
+  title: YAML 已完成订单
+  amount: 188.88
+  status: done
+  expected_status: 201
+  expected_error_field: null
+
+- id: zero-amount
+  title: YAML 零金额订单
+  amount: 0.0
+  status: pending
+  expected_status: 422
+  expected_error_field: amount
+
+- id: blank-title
+  title: ""
+  amount: 10.0
+  status: pending
+  expected_status: 422
+  expected_error_field: title
+
+- id: invalid-status
+  title: YAML 非法状态订单
+  amount: 10.0
+  status: unknown
+  expected_status: 422
+  expected_error_field: status

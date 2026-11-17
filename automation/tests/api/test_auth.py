@@ -1,6 +1,5 @@
 """鉴权接口的成功、失败与 token 有效性用例。"""
 
-import httpx
 import pytest
 
 from core import APIClient

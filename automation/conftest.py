@@ -6,8 +6,16 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
+
 from config import Settings
-from core import APIClient, configure_logging
+from core import (
+    APIClient,
+    attach_redacted_json,
+    configure_logging,
+    get_request_history,
+    start_request_history,
+    stop_request_history,
+)
 from services import AuthService, OrderService
 
 CONFIG_DIR = Path(__file__).resolve().parent / "config"
@@ -20,6 +28,38 @@ def pytest_addoption(parser) -> None:
         default="dev",
         choices=("dev", "staging"),
         help="选择自动化测试环境配置，默认 dev",
+    )
+
+
+@pytest.fixture(autouse=True)
+def request_history_capture() -> Iterator[None]:
+    """每条测试开始前创建请求历史，结束后清理。"""
+    start_request_history()
+    yield
+    stop_request_history()
+
+
+@pytest.hookimpl(hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    """测试失败时把本次测试的全部请求响应附加到 Allure。"""
+    outcome = yield
+    report = outcome.get_result()
+
+    if not report.failed:
+        return
+
+    history = get_request_history()
+    if not history:
+        return
+
+    attach_redacted_json(
+        name=f"失败上下文（{report.when}）",
+        data={
+            "test": item.nodeid,
+            "phase": report.when,
+            "request_count": len(history),
+            "exchanges": history,
+        },
     )
 
 
@@ -59,11 +99,15 @@ def base_url(settings: Settings) -> str:
 
 
 @pytest.fixture(scope="session")
-def api_client(base_url: str) -> Iterator[APIClient]:
-    """整个测试会话只共享一个HTTP客户端"""
+def api_client(base_url: str, settings: Settings) -> Iterator[APIClient]:
+    """根据当前环境配置创建共享 HTTP 客户端。"""
     configure_logging(logging.INFO)
 
-    with APIClient(base_url=base_url) as client:
+    with APIClient(
+        base_url=base_url,
+        timeout=settings.timeout_seconds,
+        verify_ssl=settings.verify_ssl,
+    ) as client:
         yield client
 
 

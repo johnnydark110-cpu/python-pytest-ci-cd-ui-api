@@ -5,12 +5,15 @@ from __future__ import annotations
 from collections.abc import Mapping
 from time import perf_counter
 from types import TracebackType
-from typing import Any
+from typing import Any, Self
 
+import allure
 import httpx
 
+from .allure_utils import attach_redacted_json
 from .exceptions import APITransportError
 from .logger import format_log_data, get_logger
+from .request_context import record_request_exchange
 
 logger = get_logger(__name__)
 
@@ -69,10 +72,10 @@ class APIClient:
             "headers": effective_headers,
             "body": json_body,
         }
-        logger.info(
-            "API request details:\n%s",
-            format_log_data(request_context),
-        )
+        # logger.info(
+        #     "API request details:\n%s",
+        #     format_log_data(request_context),
+        # )
 
         request_options: dict[str, Any] = {}
         if params is not None:
@@ -82,43 +85,70 @@ class APIClient:
         if headers is not None:
             request_options["headers"] = dict(headers)
 
-        try:
-            response = self._client.request(
-                method,
-                normalized_path,
-                **request_options,
+        with allure.step(f"HTTP {method} {normalized_path}"):
+            logger.info(
+                "API request details:\n%s",
+                format_log_data(request_context),
             )
-        except httpx.HTTPError as exc:
-            logger.exception(
-                "API request failed %s %s",
-                method,
-                request_url,
+            attach_redacted_json(
+                name="请求上下文",
+                data=request_context,
             )
-            raise APITransportError(
-                method=method,
-                url=request_url,
-                cause=exc,
-            ) from exc
 
-        elapsed_ms = (perf_counter() - started_at) * 1000
-        logger.info(
-            "API response %s %s -> %s (%.2f ms)",
-            method,
-            response.request.url,
-            response.status_code,
-            elapsed_ms,
-        )
+            try:
+                response = self._client.request(
+                    method,
+                    normalized_path,
+                    **request_options,
+                )
+            except httpx.HTTPError as exc:
+                logger.exception(
+                    "API request failed %s %s",
+                    method,
+                    request_url,
+                )
+                record_request_exchange(
+                    request_context,
+                    {
+                        "transport_error": {
+                            "type": type(exc).__name__,
+                            "message": str(exc),
+                        }
+                    },
+                )
+                raise APITransportError(
+                    method=method,
+                    url=request_url,
+                    cause=exc,
+                ) from exc
 
-        response_context = {
-            "status_code": response.status_code,
-            "headers": dict(response.headers),
-            "body": self._read_response_body(response),
-            "elapsed_ms": round(elapsed_ms, 2),
-        }
-        logger.info(
-            "API response details:\n%s",
-            format_log_data(response_context),
-        )
+            elapsed_ms = (perf_counter() - started_at) * 1000
+            logger.info(
+                "API response %s %s -> %s (%.2f ms)",
+                method,
+                response.request.url,
+                response.status_code,
+                elapsed_ms,
+            )
+
+            response_context = {
+                "status_code": response.status_code,
+                "headers": dict(response.headers),
+                "body": self._read_response_body(response),
+                "elapsed_ms": round(elapsed_ms, 2),
+            }
+            logger.info(
+                "API response details:\n%s",
+                format_log_data(response_context),
+            )
+            attach_redacted_json(
+                name="响应上下文",
+                data=response_context,
+            )
+            record_request_exchange(
+                request_context,
+                response_context,
+            )
 
         return response
 
@@ -176,7 +206,7 @@ class APIClient:
         """关闭底层连接池。"""
         self._client.close()
 
-    def __enter__(self) -> APIClient:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(

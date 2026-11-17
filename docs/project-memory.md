@@ -3,8 +3,8 @@
 ## 当前状态
 
 - 当前阶段：阶段 3（数据驱动、配置与报告）
-- 更新时间：2026-11-13
-- 状态：阶段三前两节课已完成并经学习者确认；第三节课准备接入 `--env` 环境选择
+- 更新时间：2026-11-17
+- 状态：阶段三已由学习者确认正式完成；阶段四尚未开始。阶段三代码仍未提交，Ruff 尚有两项代码质量收尾问题，需要在进入阶段四前或提交阶段三时处理
 
 ## 项目目标
 
@@ -139,12 +139,51 @@
   - `AUTOMATION_TIMEOUT_SECONDS` 可覆盖 staging 的 YAML 超时。
   - 临时加载脚本已删除，配置只包含非敏感信息。
   - 已提交为 `34f44ef 创建开发环境配置 创建预发布环境配置`。
+- 阶段三第三节课已完成并经学习者确认：
+  - `conftest.py` 已注册 `--env`，支持 `dev`、`staging`，默认 `dev`。
+  - 已增加 session 级 `settings` fixture，并根据 `--env` 加载 `config/<env>.yaml`。
+  - `base_url` 已改为从 `Settings.base_url` 派生。
+  - `APIClient` 已增加 `verify_ssl` 参数，并在内部把 `timeout` 和 `verify` 传给 `httpx.Client`。
+  - 新增 `tests/test_config_wiring.py`，同时验证 `Settings`、`base_url` 和 `api_client` 的地址、超时与 SSL 配置。
+  - 提交为 `a67c41d 添加setting对象Session范围初始化的fixture，修改APIClient在构造方法中添加setting配置`。
+  - 学习者补齐 `api_client` fixture，把 `settings.timeout_seconds` 与 `settings.verify_ssl` 显式传给 `APIClient`。
+  - dev 与 staging 配置接线专项均通过，学习者确认第三课完成。
+  - 当前工作区中 `automation/conftest.py` 的第三课修正尚未提交；最近提交仍为 `a67c41d`。
+- 阶段三第四节课已完成并经学习者确认：
+  - 已创建 `automation/testdata/orders.yaml`，包含 6 组订单创建数据。
+  - 已创建 `automation/core/yaml_loader.py` 和 `automation/tests/api/test_order_data_driven.py`。
+  - `core/__init__.py` 已导出 `load_yaml_test_cases`。
+  - 加载器类型注解已修正为 `list[dict[str, Any]]`。
+  - 数据驱动测试已增加模块级 `regression` 标记。
+  - 学习者确认数据驱动专项 6 passed、regression 34 passed、1 deselected、全套 35 passed。
+  - 当前新增与修改文件尚未提交；最近提交仍为 `a67c41d`。
+- 阶段三第五节课已完成并经学习者确认：
+  - 安装并锁定 `allure-pytest 2.16.2` 开发依赖。
+  - 安装 Allure Commandline 2.46.2 与 Temurin JRE 21，并解决终端 PATH 与 VS Code 继承旧环境的问题。
+  - 创建 `core/allure_utils.py`，通过 `format_log_data()` 脱敏后附加 JSON。
+  - `APIClient.request()` 增加 `allure.step()`，每次请求自动附加“请求上下文”和“响应上下文”。
+  - `OrderService.create_order()` 增加 `@allure.step("创建订单")`。
+  - 数据驱动用例增加 feature、story、动态 title 和“校验订单创建响应” step。
+  - `pyproject.toml` 配置 Ruff `known-first-party`，`ruff check --select I001 automation` 通过。
+  - 已生成 `automation/allure-results`，并通过 `allure serve` 检查步骤、附件和敏感信息脱敏。
+- 阶段三第六节课已完成并经学习者确认：
+  - 创建 `core/request_context.py`，使用 `ContextVar` 按测试保存请求响应历史，并在记录时脱敏。
+  - `conftest.py` 增加 autouse fixture，在每条测试开始前创建历史、结束后清理。
+  - `conftest.py` 增加 `pytest_runtest_makereport` hook，仅在失败时附加汇总 JSON。
+  - `APIClient` 已把正常响应和传输异常登记到当前测试的历史列表。
+  - 临时失败用例已验证报告包含注册、登录、订单创建请求及“失败上下文（call）”附件，随后已删除。
+  - 学习者确认第六课验收通过。
+- 阶段三总验收已完成并经学习者确认：
+  - `--env=dev` 与 `--env=staging` 配置切换、YAML 数据驱动、Allure step/attachment、失败自动上下文和配置错误提示均按阶段验收流程检查。
+  - 临时失败用例 `tests/api/test_failure_context_demo.py` 已删除，不存在于当前工作区。
+  - 学习者确认阶段三正式完成。
+  - 阶段三新增与修改代码尚未提交；最近提交仍为 `a67c41d`。
 
 ## 待办
 
-- 在 `conftest.py` 中增加 `--env` 命令行选项和 session 级 `settings` fixture。
-- 让 `base_url`、`api_client` 使用所选 YAML 中的地址、超时和 SSL 配置。
-- 创建配置接线测试，分别验证 `--env dev` 与 `--env staging`。
+- 清理阶段三代码质量：删除 `tests/api/test_auth.py` 未使用的 `httpx` 导入，并将 `APIClient.__enter__` 返回类型改为 `Self`。
+- 提交阶段三全部代码、依赖锁和项目记忆变更。
+- 阶段三提交完成后再进入阶段四 UI 自动化与页面对象。
 
 ## 项目结构快照
 
@@ -164,14 +203,23 @@
 - Codex 当前终端的 PATH 尚未识别 `uv`；实际执行时可使用 uv 的显式安装路径，或由学习者在自己的新 PowerShell 中执行。
 - 在 `automation/` 中直接执行 `pytest` 会命中全局 Python 3.11 的 pytest 8.4.2，未加载项目 `.venv` 中的 pytest-html；应使用 `uv run pytest` 或项目的虚拟环境解释器。
 - `automation/pyproject.toml` 声明 `requires-python = ">=3.11"`；uv 当前为独立环境选择了 Python 3.12.14，这与根目录被测系统的 Python 3.11.5 环境相互隔离。
-- PyCharm 当前可能把 `core`、`services`、`pydantic_settings` 等导入标红，因为源码根目录或解释器尚未正确配置；必须选择 `automation/.venv/Scripts/python.exe` 并把 `automation/` 标记为 Sources Root，以 `uv run python` 的实际导入结果为准，不应安装名为 `APIClient` 的包。
+- VS Code 当前 `.vscode/settings.json` 与 `launch.json` 仍按根目录 `.venv`、根目录 `tests` 和根目录导入路径配置；必须选择 `automation/.venv/Scripts/python.exe`，把 `automation/` 加入 Pylance 搜索路径，并使用 `automation/` 作为 pytest 工作目录。
 - Pydantic `AnyHttpUrl` 会把无路径 URL 规范化为带根路径 `/` 的形式；比较 URL 时应使用 `str(settings.base_url).rstrip("/")`，不能要求其字符串不带末尾 `/`。
+- pytest 收集阶段会对 YAML 数据列表求值；YAML 语法、顶层类型或用例 ID 有问题时，会在收集阶段直接报错，应先修复数据文件再运行用例。
+- `allure-pytest 2.16.2` 已加入 `automation/pyproject.toml`、`uv.lock` 并安装到 `automation/.venv`。
+- VS Code 必须以 `automation/` 作为 pytest 工作目录并使用 `automation/.venv`；若启动时间早于 Java/Allure 的 PATH 修改，需要完整重启 VS Code 才能让新终端继承系统环境。
+- 附件必须继续使用现有 `redact_data()` 脱敏，不能直接附加 Authorization、密码或 token 明文。
+- Eclipse Temurin JRE 21 已安装到 `C:\Program Files\Eclipse Adoptium\jre-21.0.13.9-hotspot`，系统 PATH 和 `JAVA_HOME` 已正确配置；安装前已打开的 PowerShell 不会自动继承新 PATH，执行 `java --version` 前需要重开终端或在当前会话临时加载 Java 的 `bin`。
+- Allure Commandline 2.46.2 已安装到 `C:\Users\Administrator\AppData\Local\Programs\allure-commandline\2.46.2\allure-2.46.2`；若新终端提示找不到 `allure`，先把其 `bin` 目录加入用户 PATH，并完整重启 VS Code。
+- 失败上下文必须按测试隔离并在测试结束后清理，不能让上一条测试的请求混入下一条测试。
+- 阶段三总验收复核 `ruff check automation` 时仍有两项问题：`tests/api/test_auth.py` 的 `httpx` 未使用（F401），以及 `APIClient.__enter__` 应返回 `Self`（PYI034）。
+- 当前所有阶段三代码修改仍位于未提交工作区；最近提交仍为 `a67c41d`。
 
 ## 下一步计划
 
-1. 增加 `--env` 参数、`settings` fixture，并把配置接入 `base_url` 和 `api_client`。
-2. 下一课建立 `testdata/*.yaml`，用参数化驱动多组业务数据。
-3. 随后接入 Allure step 与请求响应 attachment。
+1. 修正 Ruff F401 与 PYI034，确保 `ruff check automation` 全部通过。
+2. 提交阶段三代码，并确认工作区干净、依赖锁有效。
+3. 提交完成后开始阶段四第一课：浏览器自动化工具选型与依赖安装。
 
 ## 重要变更
 
@@ -199,4 +247,8 @@
 - 阶段二第八节课完成：实现脱敏后的完整请求响应日志，提交为 `3d32010`；阶段二全部验收通过。
 - 阶段三第一节课完成：新增 `pydantic-settings`、PyYAML、类型安全 `Settings` 与 YAML 加载器；学习者确认通过。
 - 阶段三第二节课完成：新增 `dev.yaml` 与 `staging.yaml`，提交为 `34f44ef`；学习者确认通过。
-- 阶段三第三节课开始：接入 `--env`，并让测试 fixtures 使用所选环境配置。
+- 阶段三第三节课完成：接入 `--env`、`settings` fixture 与配置接线测试；`api_client` 已读取环境的超时和 SSL 配置，提交基线为 `a67c41d`，学习者确认通过。
+- 阶段三第四节课完成：新增 `testdata/orders.yaml`、YAML 加载器和 6 项参数化订单用例；学习者确认专项与全套验收通过。
+- 阶段三第五节课完成：接入 Allure feature/story/step，自动附加脱敏请求与响应 JSON，并通过 `allure serve` 验收。
+- 阶段三第六节课完成：实现按测试隔离的请求历史，在失败时自动附加汇总上下文，学习者确认通过。
+- 阶段三总验收完成：学习者确认阶段三正式完成；数据驱动、多环境配置、Allure 报告和失败诊断能力形成闭环。
