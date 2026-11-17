@@ -1,13 +1,34 @@
 """pytest 的共享 fixture 入口。"""
+
 import logging
 from collections.abc import Iterator
-from os import getenv
+from pathlib import Path
 from uuid import uuid4
 
 import pytest
-
+from config import Settings
 from core import APIClient, configure_logging
 from services import AuthService, OrderService
+
+CONFIG_DIR = Path(__file__).resolve().parent / "config"
+
+
+def pytest_addoption(parser) -> None:
+    parser.addoption(
+        "--env",
+        action="store",
+        default="dev",
+        choices=("dev", "staging"),
+        help="选择自动化测试环境配置，默认 dev",
+    )
+
+
+@pytest.fixture(scope="session")
+def settings(request: pytest.FixtureRequest) -> Settings:
+    """根据 --env 加载对应的 YAML 配置。"""
+    env_name = request.config.getoption("--env")
+    config_path = CONFIG_DIR / f"{env_name}.yaml"
+    return Settings.from_yaml(config_path)
 
 
 @pytest.fixture(scope="session")
@@ -20,7 +41,7 @@ def session_context() -> Iterator[dict[str, str]]:
 
 @pytest.fixture(scope="function")
 def function_context(
-        session_context: dict[str, str],
+    session_context: dict[str, str],
 ) -> Iterator[dict[str, str]]:
     """每条测试函数独立创建并销毁的上下文。"""
     print("[fixture setup] function_context")
@@ -32,9 +53,9 @@ def function_context(
 
 
 @pytest.fixture(scope="session")
-def base_url() -> str:
+def base_url(settings: Settings) -> str:
     """提供当前测试环境的基础url"""
-    return getenv("API_BASE_URL", "http://127.0.0.1:8000").rstrip("/")
+    return str(settings.base_url).rstrip("/")
 
 
 @pytest.fixture(scope="session")
@@ -63,8 +84,8 @@ def auth_user() -> dict[str, str]:
 
 @pytest.fixture(scope="function")
 def token(
-        auth_service: AuthService,
-        auth_user: dict[str, str],
+    auth_service: AuthService,
+    auth_user: dict[str, str],
 ) -> str:
     """为当前测试创建独立用户并登录取得 token。"""
 
@@ -81,8 +102,5 @@ def token(
 
 
 @pytest.fixture(scope="function")
-def order_service(
-        api_client: APIClient,
-        token: str
-) -> OrderService:
+def order_service(api_client: APIClient, token: str) -> OrderService:
     return OrderService(api_client, token)

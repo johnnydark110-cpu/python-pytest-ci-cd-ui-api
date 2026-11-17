@@ -22,12 +22,15 @@ class APIClient:
     """为测试框架提供统一配置和请求日志的 HTTP 客户端。"""
 
     def __init__(
-            self,
-            base_url: str = DEFAULT_BASE_URL,
-            timeout: float | httpx.Timeout = DEFAULT_TIMEOUT_SECONDS,
-            default_headers: Mapping[str, str] | None = None,
+        self,
+        base_url: str = DEFAULT_BASE_URL,
+        timeout: float | httpx.Timeout = DEFAULT_TIMEOUT_SECONDS,
+        default_headers: Mapping[str, str] | None = None,
+        verify_ssl: bool = True,
     ) -> None:
         self.base_url = base_url.rstrip("/")
+        self.timeout = timeout
+        self.verify_ssl = verify_ssl
 
         headers = {"Accept": "application/json"}
         if default_headers:
@@ -37,16 +40,17 @@ class APIClient:
             base_url=self.base_url,
             timeout=timeout,
             headers=headers,
+            verify=verify_ssl,
         )
 
     def request(
-            self,
-            method: str,
-            path: str,
-            *,
-            params: Mapping[str, Any] | None = None,
-            json_body: Any | None = None,
-            headers: Mapping[str, str] | None = None,
+        self,
+        method: str,
+        path: str,
+        *,
+        params: Mapping[str, Any] | None = None,
+        json_body: Any | None = None,
+        headers: Mapping[str, str] | None = None,
     ) -> httpx.Response:
         """发送请求并记录脱敏后的完整请求响应上下文。"""
         normalized_path = f"/{path.lstrip('/')}"
@@ -119,21 +123,21 @@ class APIClient:
         return response
 
     def get(
-            self,
-            path: str,
-            *,
-            params: Mapping[str, Any] | None = None,
-            headers: Mapping[str, str] | None = None,
+        self,
+        path: str,
+        *,
+        params: Mapping[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
     ) -> httpx.Response:
         return self.request("GET", path, params=params, headers=headers)
 
     def post(
-            self,
-            path: str,
-            *,
-            json_body: Any | None = None,
-            params: Mapping[str, Any] | None = None,
-            headers: Mapping[str, str] | None = None,
+        self,
+        path: str,
+        *,
+        json_body: Any | None = None,
+        params: Mapping[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
     ) -> httpx.Response:
         return self.request(
             "POST",
@@ -144,12 +148,12 @@ class APIClient:
         )
 
     def put(
-            self,
-            path: str,
-            *,
-            json_body: Any | None = None,
-            params: Mapping[str, Any] | None = None,
-            headers: Mapping[str, str] | None = None,
+        self,
+        path: str,
+        *,
+        json_body: Any | None = None,
+        params: Mapping[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
     ) -> httpx.Response:
         return self.request(
             "PUT",
@@ -160,11 +164,11 @@ class APIClient:
         )
 
     def delete(
-            self,
-            path: str,
-            *,
-            params: Mapping[str, Any] | None = None,
-            headers: Mapping[str, str] | None = None,
+        self,
+        path: str,
+        *,
+        params: Mapping[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
     ) -> httpx.Response:
         return self.request("DELETE", path, params=params, headers=headers)
 
@@ -176,10 +180,10 @@ class APIClient:
         return self
 
     def __exit__(
-            self,
-            exc_type: type[BaseException] | None,
-            exc_value: BaseException | None,
-            traceback: TracebackType | None,
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         self.close()
 
