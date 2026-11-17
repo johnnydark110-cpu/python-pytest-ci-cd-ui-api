@@ -1,0 +1,20 @@
+[project]
+name = "python-pytest-ci-cd-ui-api"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Administrator", email = "johnny@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic-settings>=2.16.3",
+    "pyyaml>=6.0.3",
+]
+
+[project.scripts]
+python-pytest-ci-cd-ui-api = "python_pytest_ci_cd_ui_api:main"
+
+[build-system]
+requires = ["uv_build>=0.13.8,<0.14.0"]
+build-backend = "uv_build"

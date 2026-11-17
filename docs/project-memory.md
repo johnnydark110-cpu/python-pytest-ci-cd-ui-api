@@ -4,7 +4,7 @@
 
 - 当前阶段：阶段 3（数据驱动、配置与报告）
 - 更新时间：2026-11-13
-- 状态：阶段三第一节课已完成并经学习者确认；第二节课准备创建正式 dev/staging 配置文件
+- 状态：阶段三前两节课已完成并经学习者确认；第三节课准备接入 `--env` 环境选择
 
 ## 项目目标
 
@@ -132,12 +132,19 @@
   - `from_yaml()` 支持缺失文件、非对象 YAML、未知字段和非法类型的明确错误。
   - 支持 `AUTOMATION_ENVIRONMENT`、`AUTOMATION_BASE_URL`、`AUTOMATION_TIMEOUT_SECONDS`、`AUTOMATION_VERIFY_SSL` 环境变量覆盖。
   - 验证合法 YAML、非法 YAML 和 URL 规范化行为；`AnyHttpUrl` 的字符串形式会补根路径 `/`。
+- 阶段三第二节课已完成并经学习者确认：
+  - 创建 `config/dev.yaml`：本地 `127.0.0.1:8000`、10 秒超时、SSL 校验开启。
+  - 创建 `config/staging.yaml`：本地模拟 `127.0.0.1:8001`、20 秒超时、SSL 校验开启。
+  - 两份 YAML 均可通过 `Settings.from_yaml()` 加载并完成类型校验。
+  - `AUTOMATION_TIMEOUT_SECONDS` 可覆盖 staging 的 YAML 超时。
+  - 临时加载脚本已删除，配置只包含非敏感信息。
+  - 已提交为 `34f44ef 创建开发环境配置 创建预发布环境配置`。
 
 ## 待办
 
-- 清理 Git 暂存区中已从工作区删除的 `check_settings.py`、`verify.yaml`、`verify-invalid.yaml`。
-- 创建正式 `automation/config/dev.yaml` 与 `automation/config/staging.yaml`。
-- 分别加载两份配置并验证环境名、基础地址、超时和 SSL 配置。
+- 在 `conftest.py` 中增加 `--env` 命令行选项和 session 级 `settings` fixture。
+- 让 `base_url`、`api_client` 使用所选 YAML 中的地址、超时和 SSL 配置。
+- 创建配置接线测试，分别验证 `--env dev` 与 `--env staging`。
 
 ## 项目结构快照
 
@@ -162,9 +169,9 @@
 
 ## 下一步计划
 
-1. 创建 `dev.yaml` 与 `staging.yaml`，明确本地开发环境和本地模拟 staging 环境的配置差异。
-2. 下一课在 `conftest.py` 中增加 `--env` 命令行参数，并用它选择配置文件。
-3. 随后建立 YAML 测试数据参数化和 Allure 报告。
+1. 增加 `--env` 参数、`settings` fixture，并把配置接入 `base_url` 和 `api_client`。
+2. 下一课建立 `testdata/*.yaml`，用参数化驱动多组业务数据。
+3. 随后接入 Allure step 与请求响应 attachment。
 
 ## 重要变更
 
@@ -191,4 +198,5 @@
 - 阶段二第七节课完成：新增 9 个订单 API 测试项并完成订单、鉴权、用户隔离验收；提交为 `e2c45f7`。
 - 阶段二第八节课完成：实现脱敏后的完整请求响应日志，提交为 `3d32010`；阶段二全部验收通过。
 - 阶段三第一节课完成：新增 `pydantic-settings`、PyYAML、类型安全 `Settings` 与 YAML 加载器；学习者确认通过。
-- 阶段三第二节课开始：创建正式开发与预发布配置文件。
+- 阶段三第二节课完成：新增 `dev.yaml` 与 `staging.yaml`，提交为 `34f44ef`；学习者确认通过。
+- 阶段三第三节课开始：接入 `--env`，并让测试 fixtures 使用所选环境配置。

@@ -4,6 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
+"""
+继承 `Exception`（**不要继承 BaseException！** BaseException 包含 KeyboardInterrupt、系统退出，业务异常不要抓）
+"""
+
 
 class AutomationError(Exception):
     """自动化框架中所有自定义异常的基类。"""
@@ -13,11 +17,11 @@ class APIClientError(AutomationError):
     """API 客户端相关错误的基类。"""
 
     def __init__(
-            self,
-            message: str,
-            *,
-            method: str | None = None,
-            url: str | None = None,
+        self,
+        message: str,
+        *,
+        method: str | None = None,
+        url: str | None = None,
     ) -> None:
         super().__init__(message)
         self.method = method
@@ -28,11 +32,11 @@ class APITransportError(APIClientError):
     """请求未能获得 HTTP 响应时抛出的异常。"""
 
     def __init__(
-            self,
-            *,
-            method: str,
-            url: str,
-            cause: BaseException,
+        self,
+        *,
+        method: str,
+        url: str,
+        cause: BaseException,
     ) -> None:
         super().__init__(
             f"{method} {url} 请求失败: {cause}",
@@ -46,13 +50,13 @@ class APIResponseError(APIClientError):
     """业务要求成功响应，但服务端返回非预期状态时抛出的异常。"""
 
     def __init__(
-            self,
-            message: str,
-            *,
-            status_code: int,
-            body: Any,
-            method: str | None = None,
-            url: str | None = None,
+        self,
+        message: str,
+        *,
+        status_code: int,
+        body: Any,
+        method: str | None = None,
+        url: str | None = None,
     ) -> None:
         super().__init__(message, method=method, url=url)
         self.status_code = status_code

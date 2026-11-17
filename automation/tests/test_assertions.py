@@ -4,7 +4,7 @@ import pytest
 
 pytestmark = [
     pytest.mark.regression,
-    pytest.mark.smoke
+    pytest.mark.smoke,
 ]
 
 

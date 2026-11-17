@@ -1,0 +1,102 @@
+阶段一：
+知识点1：
+    Set-Location 'E:\python-pytest-ci-cd-ui-api\automation'
+    uv run pytest tests\test_fixtures.py -s -v  # 这里的 -s 表示关闭 pytest 的输出捕获，因此能看到 fixture 中的 print
+    在 conftest.py 中定义共享 fixture。
+    [x] 定义 function 和 session 两种作用域。
+    [x] 使用 yield 实现 setup/teardown。
+    [x] 通过参数名完成 fixture 依赖注入。
+    [x] 观察到 session 只创建一次、function 对每条用例创建一次。
+
+知识点2：
+    测试用例参数化 @parametrize((参数名1， 参数名2, ....), [(参数值1)， (参数值2), ....], ids=["id name1", "id name2", ....])
+
+知识点3：
+    marker注册和 -m 筛选
+    完整pytest.ini配置
+        [pytest]
+        testpaths = tests
+        python_files = test_*.py
+        python_classes = Test*
+        python_functions = test_*
+        addopts = --strict-markers
+
+        markers =
+            smoke: fast core checks
+            regression: broader behavior checks
+    markers 正式注册 smoke 和 regression，同时提供说明文字。
+    --strict-markers 禁止使用未注册的 marker。以后把 smoke 拼成 smok 时会直接报配置错误，而不是悄悄生成一个无意义的筛选标签。
+    testpaths = tests 仍只从 tests/ 收集测试。
+    测试文件中的标记： pytestmark = pytest.mark.smoke
+    uv run pytest --markers 查看当前注册的marker
+    # 本文件所有用例同时打上 smoke + api
+    pytestmark = [
+        pytest.mark.smoke,
+        pytest.mark.api
+    ]
+    uv run --active pytest -m "smoke or auth" # 运行多个标记
+    -s:关闭控制台捕获
+    -m：按标记筛选用例
+    -v：详细输出
+    -k: 按名称筛选
+        uv run pytest -k "order and not parametrize" -v # 用例名称包含order，排除参数化用例
+    --maxfail： 失败提前停止
+
+知识点4：
+    pytest接入HTML测试报告
+    Set-Location 'E:\python-pytest-ci-cd-ui-api\automation'
+    uv add --dev pytest-html 
+        # --dev 表示它不是产品运行时依赖，只在开发、测试和 CI 中使用。
+        --dev 表示它不是产品运行时依赖，只在开发、测试和 CI 中使用。
+        uv 会把直接依赖写入 pyproject.toml。
+        uv 会把 pytest-html 及 Jinja2、pytest-metadata 等间接依赖的精确版本写入 uv.lock。
+        软件包安装到 automation/.venv，不会污染根目录 venv/。
+    命令行临时指定：
+        uv run --active pytest -s -v --html=reports/report.html
+    pytest.ini 全局配置：
+        [pytest]
+        testpaths = tests
+        pythonpath = .
+        # 追加 html报告参数，--self-contained-html 打包为独立单文件
+        addopts = -s -v --html=reports/report.html --self-contained-html
+        markers =
+            smoke: 冒烟用例
+            api: 接口测试
+            order: 订单模块
+            auth: 鉴权模块
+
+ApiClient 知识点
+    1. from __future__ import annotations 如果你在类里面注解自己这个类，会报错，因为类还没定义完。
+        # 不加这个，3.7/3.8会报错
+        class A:
+            def func(self) -> A:
+                ...
+    2. 模块导入 logging
+        import logging
+        logger = logging.getLogger(__name__)
+        - `__name__` 是当前模块名，比如 `clients.api_client`
+        - 好处：日志可以按模块名过滤，在 pytest 配置里控制这个模块日志级别
+        - `logger.info()` 普通日志；`logger.exception()` 只在 except 块里用：自动记录异常堆栈（traceback），等价于 `logger.error(..., exc_info=True)`
+
+        > 
+        > 区分：
+        > 
+        > 
+        > - `logger.error()`：只打印错误文字，不带堆栈
+        > - `logger.exception()`：**必须在 except 里面**，自动带上异常栈，定位接口报错非常好用
+    3. from collections.abc import Mapping
+        - dict 是 Mapping 的实现子类
+        - 参数标注 Mapping：代表只要是 “键值映射对象” 都可以传，不限制必须是原生 dict（比如一些自定义有序字典、werkzeug 的 Headers 对象都可以）
+        - 更宽松、更规范的接口类型标注
+
+        > 
+        > 对比：
+        > `dict[str,str]`：只能传 dict
+        > `Mapping[str,str]`：任意满足映射协议的对象（推荐写库、封装工具时使用）
+    4. `time.perf_counter()`
+        - 不受系统时间修改影响（time.time () 会受系统时间回拨影响，不准）
+        - 返回浮点数，单位秒
+        - 这里 `(结束-开始)*1000` → 毫秒
+
+        > 
+        > 自动化测试统计接口响应时间标准方案。

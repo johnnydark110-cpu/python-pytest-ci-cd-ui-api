@@ -37,22 +37,15 @@ class Settings(BaseSettings):
         if not yaml_path.is_file():
             raise FileNotFoundError(f"配置文件不存在: {yaml_path}")
 
-        raw_data = yaml.safe_load(
-            yaml_path.read_text(encoding="utf-8")
-        )
+        raw_data = yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
 
         if raw_data is None:
             raw_data = {}
 
         if not isinstance(raw_data, dict):
-            raise ValueError(
-                f"配置文件顶层必须是 YAML 对象: {yaml_path}"
-            )
+            raise TypeError(f"配置文件顶层必须是 YAML 对象: {yaml_path}")
 
-        data = {
-            str(key): value
-            for key, value in raw_data.items()
-        }
+        data = {str(key): value for key, value in raw_data.items()}
 
         for field_name in cls.model_fields:
             env_name = f"AUTOMATION_{field_name.upper()}"
