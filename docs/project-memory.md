@@ -2,9 +2,9 @@
 
 ## 当前状态
 
-- 当前阶段：阶段 3（数据驱动、配置与报告）
+- 当前阶段：阶段 4（UI 自动化与页面对象）
 - 更新时间：2026-11-17
-- 状态：阶段三已由学习者确认正式完成；阶段四尚未开始。阶段三代码仍未提交，Ruff 尚有两项代码质量收尾问题，需要在进入阶段四前或提交阶段三时处理
+- 状态：阶段三已完成、提交并确认通过；阶段四第一节课进行中，已选定 Playwright，准备安装 Python 包、Chromium 浏览器并验证启动与关闭
 
 ## 项目目标
 
@@ -177,13 +177,14 @@
   - `--env=dev` 与 `--env=staging` 配置切换、YAML 数据驱动、Allure step/attachment、失败自动上下文和配置错误提示均按阶段验收流程检查。
   - 临时失败用例 `tests/api/test_failure_context_demo.py` 已删除，不存在于当前工作区。
   - 学习者确认阶段三正式完成。
-  - 阶段三新增与修改代码尚未提交；最近提交仍为 `a67c41d`。
+  - Ruff 的 F401 与 PYI034 已清理，`ruff check automation` 通过。
+  - 阶段三全部代码已提交为 `355ed4b 完整最终allure报告功能`，当前工作区干净。
 
 ## 待办
 
-- 清理阶段三代码质量：删除 `tests/api/test_auth.py` 未使用的 `httpx` 导入，并将 `APIClient.__enter__` 返回类型改为 `Self`。
-- 提交阶段三全部代码、依赖锁和项目记忆变更。
-- 阶段三提交完成后再进入阶段四 UI 自动化与页面对象。
+- 使用 uv 将 `playwright` 安装为 `automation/` 的开发依赖并更新 `uv.lock`。
+- 执行 `playwright install chromium` 安装 Chromium 浏览器运行时。
+- 创建临时验证脚本，确认无头 Chromium 能启动、打开本地 HTML、读取标题并正确关闭。
 
 ## 项目结构快照
 
@@ -212,14 +213,14 @@
 - Eclipse Temurin JRE 21 已安装到 `C:\Program Files\Eclipse Adoptium\jre-21.0.13.9-hotspot`，系统 PATH 和 `JAVA_HOME` 已正确配置；安装前已打开的 PowerShell 不会自动继承新 PATH，执行 `java --version` 前需要重开终端或在当前会话临时加载 Java 的 `bin`。
 - Allure Commandline 2.46.2 已安装到 `C:\Users\Administrator\AppData\Local\Programs\allure-commandline\2.46.2\allure-2.46.2`；若新终端提示找不到 `allure`，先把其 `bin` 目录加入用户 PATH，并完整重启 VS Code。
 - 失败上下文必须按测试隔离并在测试结束后清理，不能让上一条测试的请求混入下一条测试。
-- 阶段三总验收复核 `ruff check automation` 时仍有两项问题：`tests/api/test_auth.py` 的 `httpx` 未使用（F401），以及 `APIClient.__enter__` 应返回 `Self`（PYI034）。
-- 当前所有阶段三代码修改仍位于未提交工作区；最近提交仍为 `a67c41d`。
+- `automation/pyproject.toml` 与 `uv.lock` 尚未包含 Playwright 依赖。
+- 当前尚未安装 Playwright Chromium 浏览器运行时；只安装 Python 包不足以启动浏览器。
 
 ## 下一步计划
 
-1. 修正 Ruff F401 与 PYI034，确保 `ruff check automation` 全部通过。
-2. 提交阶段三代码，并确认工作区干净、依赖锁有效。
-3. 提交完成后开始阶段四第一课：浏览器自动化工具选型与依赖安装。
+1. 完成阶段四第一课：安装 Playwright 与 Chromium，运行临时启动验证并删除临时脚本。
+2. 下一课实现 `core/web_driver.py` 与 pytest 浏览器 fixture，管理浏览器、context 和 page 的生命周期。
+3. 随后实现 `pages/base_page.py`，再封装登录页与订单页。
 
 ## 重要变更
 
@@ -252,3 +253,5 @@
 - 阶段三第五节课完成：接入 Allure feature/story/step，自动附加脱敏请求与响应 JSON，并通过 `allure serve` 验收。
 - 阶段三第六节课完成：实现按测试隔离的请求历史，在失败时自动附加汇总上下文，学习者确认通过。
 - 阶段三总验收完成：学习者确认阶段三正式完成；数据驱动、多环境配置、Allure 报告和失败诊断能力形成闭环。
+- 阶段三提交完成：Ruff 检查通过，全部阶段三成果提交为 `355ed4b 完整最终allure报告功能`。
+- 阶段四开始：确定使用 Playwright sync API，避免额外引入 pytest-playwright 生命周期层，后续由框架自行实现浏览器 fixture 和页面对象。
