@@ -3,8 +3,8 @@
 ## 当前状态
 
 - 当前阶段：阶段 4（UI 自动化与页面对象）
-- 更新时间：2026-11-17
-- 状态：阶段三已完成、提交并确认通过；阶段四第一节课进行中，已选定 Playwright，准备安装 Python 包、Chromium 浏览器并验证启动与关闭
+- 更新时间：2026-11-19
+- 状态：阶段四第六节课已完成并经学习者确认；阶段四总验收进行中，准备切回无头浏览器并检查 UI 连续稳定性、定位集中、失败截图和浏览器释放
 
 ## 项目目标
 
@@ -179,12 +179,50 @@
   - 学习者确认阶段三正式完成。
   - Ruff 的 F401 与 PYI034 已清理，`ruff check automation` 通过。
   - 阶段三全部代码已提交为 `355ed4b 完整最终allure报告功能`，当前工作区干净。
+- 阶段四第一节课已完成并经学习者确认：
+  - 选择 Playwright sync API 作为 UI 自动化工具，不额外引入 `pytest-playwright`。
+  - `playwright 1.65.2` 已作为开发依赖写入 `automation/pyproject.toml` 和 `uv.lock`。
+  - Chromium 浏览器运行时已安装并完成无头启动验证。
+  - 临时验证脚本已验证页面标题、`get_by_test_id()` 定位和浏览器关闭，验证后已删除。
+- 阶段四第二节课已完成并经学习者确认：
+  - 创建 `core/web_driver.py`，通过 `BrowserManager` 管理 session 级 Playwright 与 Chromium 生命周期。
+  - `conftest.py` 增加 session 级 `browser_manager`、function 级 `browser_context` 和 `page` fixtures。
+  - `BrowserContext` 使用当前环境的 `base_url` 与 `verify_ssl`，每条测试拥有独立 Cookie 和 localStorage。
+  - 创建 `tests/ui/test_browser_wiring.py`，验证应用页加载、`data-testid` 定位和不同 context 的存储隔离。
+  - 重复运行浏览器接线测试通过，测试结束后 Chromium 进程正常释放。
+  - 当前 `automation/conftest.py`、`core/__init__.py`、`core/web_driver.py` 与 `tests/ui/` 尚未提交；Playwright 依赖已在 `7bcc61d 添加playwright` 中提交。
+- 阶段四第三节课已完成并经学习者确认：
+  - 创建 `pages/base_page.py` 与 `pages/__init__.py`，封装相对路径导航、`data-testid` 定位、显式等待、点击、输入、文本读取和截图。
+  - 使用 Playwright `expect()` 做自动重试等待，没有引入固定 `sleep`。
+  - 创建 `tests/ui/test_base_page_wiring.py`，验证导航、输入、模式切换、文本读取和全页截图。
+  - 已生成 `automation/screenshots/base-page-wiring.png`，截图约 16 KB，目录由 `.gitignore` 排除。
+  - `app/frontend/index.html` 当前未提交修改补充了 `auth-title` 的 `data-testid`，页面对象可直接稳定定位登录/注册标题。
+- 阶段四第四节课已完成并经学习者确认：
+  - 创建 `pages/login_page.py`，封装登录页打开、输入账号密码、提交以及成功/失败状态等待。
+  - `conftest.py` 提供全局 function 级 `login_page` fixture。
+  - 创建 `tests/ui/test_login_ui.py`，通过 API `token` fixture 创建真实用户，再验证 UI 登录成功和错误密码提示。
+- 阶段四第五节课已完成并经学习者确认：
+  - 创建 `pages/order_page.py`，封装新增、搜索、按标题定位、编辑、删除与等待订单消失。
+  - `BasePage` 增加下拉框 `select_option()` 操作。
+  - `conftest.py` 提供全局 function 级 `order_page` fixture。
+  - 创建 `tests/ui/test_order_ui.py`，完成“登录 → 新增 → 搜索 → 修改 → 删除”的完整 UI 闭环。
+  - 删除流程自动接受原生 `confirm()` 对话框，编辑前等待表单回填原订单值。
+  - 当前浏览器以 `headless=False`、`slow_mo=1000` 运行，便于观察 UI 操作；正式回归前需要切回无头模式以提高速度。
+- 阶段四第六节课已完成并经学习者确认：
+  - `core/allure_utils.py` 增加 `attach_screenshot()`，把 PNG 文件附加到 Allure。
+  - `pytest_runtest_makereport` 在失败时识别可用的 `page`，自动截取全页截图并附加。
+  - 截图逻辑使用独立异常隔离，截图自身失败时记录诊断附件，不覆盖原始测试失败。
+  - 临时失败用例已验证 Allure 中出现“失败截图（call）”，截图约 19 KB，随后已删除。
+  - `reports/allure-ui-failure` 中已生成失败报告结果文件。
+  - `ruff check automation` 通过；阶段四代码仍未提交。
 
 ## 待办
 
-- 使用 uv 将 `playwright` 安装为 `automation/` 的开发依赖并更新 `uv.lock`。
-- 执行 `playwright install chromium` 安装 Chromium 浏览器运行时。
-- 创建临时验证脚本，确认无头 Chromium 能启动、打开本地 HTML、读取标题并正确关闭。
+- 将浏览器正式运行配置从 `headless=False`、`slow_mo=1000` 切回 `headless=True`、`slow_mo=0`。
+- 连续多次运行 6 条 UI 测试，确认无随机失败。
+- 检查登录和订单业务用例中不直接出现 `get_by_test_id()` 或 CSS/XPath locator。
+- 检查失败截图证据、完整回归、Ruff、依赖锁和 Chromium 进程释放。
+- 阶段四总验收通过后提交全部 UI 自动化代码。
 
 ## 项目结构快照
 
@@ -213,14 +251,17 @@
 - Eclipse Temurin JRE 21 已安装到 `C:\Program Files\Eclipse Adoptium\jre-21.0.13.9-hotspot`，系统 PATH 和 `JAVA_HOME` 已正确配置；安装前已打开的 PowerShell 不会自动继承新 PATH，执行 `java --version` 前需要重开终端或在当前会话临时加载 Java 的 `bin`。
 - Allure Commandline 2.46.2 已安装到 `C:\Users\Administrator\AppData\Local\Programs\allure-commandline\2.46.2\allure-2.46.2`；若新终端提示找不到 `allure`，先把其 `bin` 目录加入用户 PATH，并完整重启 VS Code。
 - 失败上下文必须按测试隔离并在测试结束后清理，不能让上一条测试的请求混入下一条测试。
-- `automation/pyproject.toml` 与 `uv.lock` 尚未包含 Playwright 依赖。
-- 当前尚未安装 Playwright Chromium 浏览器运行时；只安装 Python 包不足以启动浏览器。
+- 浏览器必须按“session 级 browser、function 级 context/page”管理：复用昂贵的 Chromium 进程，同时让每条 UI 测试拥有隔离的 Cookie、localStorage 和页面状态。
+- Codex 沙箱当前无法读取 `%LOCALAPPDATA%\ms-playwright` 目录，但学习者本地已确认 Chromium 可启动；实际验收以学习者终端输出为准。
+- UI 定位必须优先集中在页面对象/基础页面层，测试用例不直接重复编写 CSS/XPath；等待使用 Playwright 的显式断言，不使用固定 `sleep`。
+- 当前浏览器 fixtures 使用 `headless=False` 和 `slow_mo=1000` 便于观察；完整回归与 CI 前应切回 `headless=True` 并去掉慢动作。
+- UI 失败 hook 只能附加截图，不能改变原测试结果；截图异常必须被捕获并单独记录。
 
 ## 下一步计划
 
-1. 完成阶段四第一课：安装 Playwright 与 Chromium，运行临时启动验证并删除临时脚本。
-2. 下一课实现 `core/web_driver.py` 与 pytest 浏览器 fixture，管理浏览器、context 和 page 的生命周期。
-3. 随后实现 `pages/base_page.py`，再封装登录页与订单页。
+1. 完成阶段四总验收：无头模式连续 UI 稳定性、定位集中、失败截图、浏览器关闭和完整回归。
+2. 修正验收中发现的问题后提交阶段四全部 UI 自动化代码。
+3. 阶段四正式完成后开始阶段五第一课：marker、并行与稳定性策略设计。
 
 ## 重要变更
 
@@ -255,3 +296,10 @@
 - 阶段三总验收完成：学习者确认阶段三正式完成；数据驱动、多环境配置、Allure 报告和失败诊断能力形成闭环。
 - 阶段三提交完成：Ruff 检查通过，全部阶段三成果提交为 `355ed4b 完整最终allure报告功能`。
 - 阶段四开始：确定使用 Playwright sync API，避免额外引入 pytest-playwright 生命周期层，后续由框架自行实现浏览器 fixture 和页面对象。
+- 阶段四第一节课完成：Playwright 1.65.2 与 Chromium 已安装锁定，无头浏览器启动和 `data-testid` 定位验证通过。
+- 阶段四第二节课完成：实现浏览器 session/context/page 三级生命周期和存储隔离接线测试，学习者确认通过。
+- 阶段四第三节课完成：新增通用 `BasePage`，统一 UI 导航、显式等待、交互和截图，学习者确认通过。
+- 阶段四第四节课完成：新增 `LoginPage` 与登录成功/失败 UI 用例，学习者确认通过。
+- 阶段四第五节课完成：新增 `OrderPage` 与订单 CRUD UI 闭环，学习者确认通过。
+- 阶段四第六节课完成：实现 UI 失败自动截图、Allure PNG 附件和截图异常隔离，学习者确认通过。
+- 阶段四总验收开始：从交互调试模式切换到无头执行，检查重复稳定性、页面对象定位边界和浏览器资源释放。

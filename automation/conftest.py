@@ -6,19 +6,25 @@ from pathlib import Path
 from uuid import uuid4
 
 import pytest
+from playwright.sync_api import BrowserContext, Page
 
 from config import Settings
 from core import (
     APIClient,
+    BrowserManager,
     attach_redacted_json,
+    attach_screenshot,
     configure_logging,
+    get_logger,
     get_request_history,
     start_request_history,
     stop_request_history,
 )
+from pages import BasePage
 from services import AuthService, OrderService
 
 CONFIG_DIR = Path(__file__).resolve().parent / "config"
+logger = get_logger(__name__)
 
 
 def pytest_addoption(parser) -> None:
@@ -31,6 +37,37 @@ def pytest_addoption(parser) -> None:
     )
 
 
+@pytest.fixture(scope="session")
+def browser_manager() -> Iterator[BrowserManager]:
+    """整个测试会话共享一个 Chromium 浏览器进程。"""
+    with BrowserManager(
+        headless=False,
+        slow_mo=1000,
+    ) as manager:
+        yield manager
+
+
+@pytest.fixture(scope="function")
+def browser_context(
+    browser_manager: BrowserManager, base_url: str, settings: Settings
+) -> Iterator[BrowserContext]:
+    """每条测试使用独立BrowserContext"""
+    context = browser_manager.new_context(
+        base_url=base_url,
+        ignore_https_errors=not settings.verify_ssl,
+    )
+    yield context
+    context.close()
+
+
+@pytest.fixture(scope="function")
+def page(browser_context: BrowserContext) -> Iterator[Page]:
+    """每条测试使用独立 Page。"""
+    page = browser_context.new_page()
+    yield page
+    page.close()
+
+
 @pytest.fixture(autouse=True)
 def request_history_capture() -> Iterator[None]:
     """每条测试开始前创建请求历史，结束后清理。"""
@@ -39,14 +76,50 @@ def request_history_capture() -> Iterator[None]:
     stop_request_history()
 
 
+def _attach_failure_screenshot(item, report) -> None:
+    """测试失败时尝试截取当前页面，并隔离截图自身异常。"""
+    page = item.funcargs.get("page")
+
+    if not isinstance(page, Page):
+        return
+
+    try:
+        if page.is_closed():
+            return
+
+        screenshot_path = BasePage(page).screenshot(
+            f"failure-{report.when}-{item.name}",
+        )
+        attach_screenshot(
+            screenshot_path,
+            name=f"失败截图（{report.when}）",
+        )
+    except Exception as exc:
+        logger.exception(
+            "自动截图失败: %s",
+            item.nodeid,
+        )
+        attach_redacted_json(
+            name="自动截图失败",
+            data={
+                "test": item.nodeid,
+                "phase": report.when,
+                "error_type": type(exc).__name__,
+                "error": str(exc),
+            },
+        )
+
+
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
-    """测试失败时把本次测试的全部请求响应附加到 Allure。"""
+    """失败时附加 UI 截图和本次测试的 API 请求响应上下文。"""
     outcome = yield
     report = outcome.get_result()
 
     if not report.failed:
         return
+
+    _attach_failure_screenshot(item, report)
 
     history = get_request_history()
     if not history:
