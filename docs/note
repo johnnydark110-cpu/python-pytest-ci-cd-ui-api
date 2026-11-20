@@ -100,3 +100,43 @@ ApiClient 知识点
 
         > 
         > 自动化测试统计接口响应时间标准方案。
+
+    5. uv安装和使用第三方块
+        Set-Location 'E:\python-pytest-ci-cd-ui-api\automation'
+
+        uv add --dev pytest-xdist
+        uv lock --check
+        uv pip show pytest-xdist
+
+        运行串行基线：
+        Set-Location 'E:\python-pytest-ci-cd-ui-api\automation'
+        uv run pytest tests/api --env=dev -q
+
+        使用两个worker并行：
+        uv run pytest tests/api --env=dev -n 2 -v
+
+        验证并运行allure报告
+        uv run pytest `
+            tests/api `
+            --env=dev `
+            -n 2 `
+            -v `
+            --alluredir=reports/allure-api-parallel `
+            --clean-alluredir
+        打开报告：
+        allure serve .\reports\allure-api-parallel
+
+        全量测试：
+        uv run pytest --env=dev -q
+
+        分组与完整回归：
+        uv run pytest -m smoke --env=dev -q
+        uv run pytest -m regression --env=dev -q
+
+        代码依赖检查：
+        Set-Location 'E:\python-pytest-ci-cd-ui-api'
+
+        ruff check .
+        uv lock --check
+        git diff --check
+        git status --short

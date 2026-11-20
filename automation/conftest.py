@@ -41,7 +41,7 @@ def pytest_addoption(parser) -> None:
 def browser_manager() -> Iterator[BrowserManager]:
     """整个测试会话共享一个 Chromium 浏览器进程。"""
     with BrowserManager(
-        headless=False,
+        headless=True,
         slow_mo=1000,
     ) as manager:
         yield manager
