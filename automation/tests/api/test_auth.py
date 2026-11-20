@@ -5,7 +5,14 @@ import pytest
 from core import APIClient
 from services import AuthService, OrderService
 
-pytestmark = pytest.mark.regression
+pytestmark = [
+    pytest.mark.regression,
+    pytest.mark.flaky(
+        reruns=2,
+        reruns_delay=1,
+        only_rerun=["APITransportError"],
+    ),
+]
 
 
 def test_register_returns_authenticated_user(

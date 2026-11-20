@@ -4,7 +4,7 @@
 
 - 当前阶段：阶段 5（稳定性、并发与 CI/CD 接入）
 - 更新时间：2026-11-20
-- 状态：阶段五第一节课已完成并经学习者确认；第二节课进行中，准备注册 `serial` marker，并建立 UI 非关键用例并行、关键用例串行的分流策略
+- 状态：阶段五第二节课已完成并经学习者确认；第三节课进行中，准备引入 pytest-rerunfailures，并按异常类型只重试 `APITransportError`
 
 ## 项目目标
 
@@ -229,13 +229,20 @@
   - 已生成 `reports/allure-api-parallel`，包含完整并行 API 结果。
   - 代码已提交为 `34c9fc8 添加pytest-xdist实现api并发执行`，当前工作区干净。
   - 浏览器已切为 `headless=True`，但仍保留 `slow_mo=1000`。
+- 阶段五第二节课已完成并经学习者确认：
+  - `pytest.ini` 注册 `serial` marker，明确关键 UI 测试必须进入无 xdist 串行通道。
+  - 订单 CRUD UI 用例增加 `serial` 标记。
+  - 浏览器配置调整为 `headless=True`、`slow_mo=0`。
+  - 5 条非关键 UI 测试通过 `-n 2` 双 worker 执行，1 条关键订单测试在独立串行通道执行。
+  - 并行与串行通道均无遗漏、无重复，全量串行基线保持 41 passed。
+  - 代码已提交为 `6d0a62c 注册serial marker...`，当前工作区干净。
 
 ## 待办
 
-- 在 `pytest.ini` 注册 `serial` marker，说明该组不得放入 xdist 并行通道。
-- 将关键订单 CRUD UI 用例标记为 `serial`，保持浏览器接线、BasePage 和登录 UI 用例可并行。
-- 将浏览器 `slow_mo` 调整为 `0`，避免并行 UI 的人为延迟。
-- 分别验证 5 条非关键 UI 测试 `-n 2` 并行、1 条关键 UI 测试无 xdist 串行，以及全量串行基线。
+- 使用 uv 安装并锁定 `pytest-rerunfailures` 开发依赖。
+- 创建临时策略验证用例，证明 `APITransportError` 会被重试、普通 `AssertionError` 不会重试。
+- 为 3 个 API 测试模块增加 `only_rerun=["APITransportError"]` 的 flaky 策略。
+- 验证正式 API 串行、双 worker 并行以及全量测试在无失败时计数不变。
 
 ## 项目结构快照
 
@@ -270,12 +277,13 @@
 - 当前浏览器 fixtures 已使用 `headless=True`，但仍保留 `slow_mo=1000`；并行 UI 与 CI 前必须改为 `slow_mo=0`。
 - API 测试可以并行，UI 测试暂不放进 xdist 全量并行；后续需要单独设计 UI 并行/串行策略。
 - UI 失败 hook 只能附加截图，不能改变原测试结果；截图异常必须被捕获并单独记录。
+- pytest-rerunfailures 只能作用于测试失败；fixture setup/teardown 错误不能被当作普通测试调用失败来重试，外部环境是否可用仍需 CI 健康检查前置保障。
 
 ## 下一步计划
 
-1. 完成阶段五第二课：注册 `serial` marker，建立 UI 并行/串行分流并验证关键订单用例串行执行。
-2. 第二课通过后引入 pytest-rerunfailures，只重试网络/环境类失败。
-3. 随后进入 Docker 与 CI/CD 环境复现课程。
+1. 完成阶段五第三课：安装 pytest-rerunfailures，验证只重试 `APITransportError`，普通断言失败不重试。
+2. 重试策略通过后进入 Docker 与 docker-compose 环境复现课程。
+3. 最后编排 CI 并行、串行、报告归档与失败通知。
 
 ## 重要变更
 
@@ -318,4 +326,5 @@
 - 阶段四第六节课完成：实现 UI 失败自动截图、Allure PNG 附件和截图异常隔离，学习者确认通过。
 - 阶段四总验收完成：学习者确认 UI 自动化稳定性、页面对象、失败截图和浏览器资源管理；代码提交为 `a245ef2`。
 - 阶段五第一节课完成：pytest-xdist 3.8.0 已锁定，22 条 API 测试通过双 worker 并行验收，提交为 `34c9fc8`。
-- 阶段五第二节课开始：准备用 `serial` marker 建立 UI 并行/串行执行边界并去除浏览器慢动作。
+- 阶段五第二节课完成：注册 `serial` marker，关键订单 UI 串行、其余 UI 双 worker 并行，浏览器慢动作关闭，提交为 `6d0a62c`。
+- 阶段五第三节课开始：准备用 pytest-rerunfailures 只重试网络传输异常，禁止普通断言失败重试。

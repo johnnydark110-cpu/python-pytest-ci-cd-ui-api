@@ -8,15 +8,22 @@ import pytest
 from core import APIClient
 from services import AuthService, OrderService
 
-pytestmark = pytest.mark.regression
+pytestmark = [
+    pytest.mark.regression,
+    pytest.mark.flaky(
+        reruns=2,
+        reruns_delay=1,
+        only_rerun=["APITransportError"],
+    ),
+]
 
 
 def _create_valid_order(
-        order_service: OrderService,
-        *,
-        title: str,
-        amount: float = 99.5,
-        status: str = "pending",
+    order_service: OrderService,
+    *,
+    title: str,
+    amount: float = 99.5,
+    status: str = "pending",
 ) -> dict[str, Any]:
     """创建一条有效订单，并返回响应 JSON。"""
     response = order_service.create_order(
@@ -29,7 +36,7 @@ def _create_valid_order(
 
 
 def test_create_order_returns_created_order(
-        order_service: OrderService,
+    order_service: OrderService,
 ) -> None:
     """创建订单应返回 201 和完整订单字段。"""
     title = f"订单-{uuid4().hex[:8]}"
@@ -49,7 +56,7 @@ def test_create_order_returns_created_order(
 
 
 def test_get_order_returns_owned_order(
-        order_service: OrderService,
+    order_service: OrderService,
 ) -> None:
     """当前用户应能查询自己创建的订单详情。"""
     title = f"详情订单-{uuid4().hex[:8]}"
@@ -72,7 +79,7 @@ def test_get_order_returns_owned_order(
 
 
 def test_list_orders_supports_search_and_pagination(
-        order_service: OrderService,
+    order_service: OrderService,
 ) -> None:
     """订单列表应支持标题搜索和分页。"""
     prefix = f"search-{uuid4().hex[:6]}"
@@ -122,7 +129,7 @@ def test_list_orders_supports_search_and_pagination(
 
 
 def test_update_order_changes_only_requested_fields(
-        order_service: OrderService,
+    order_service: OrderService,
 ) -> None:
     """修改订单时未提供的字段应保持原值。"""
     original_title = f"待修改订单-{uuid4().hex[:8]}"
@@ -149,7 +156,7 @@ def test_update_order_changes_only_requested_fields(
 
 
 def test_delete_order_removes_resource(
-        order_service: OrderService,
+    order_service: OrderService,
 ) -> None:
     """删除成功返回 204，之后查询应返回 404。"""
     title = f"待删除订单-{uuid4().hex[:8]}"
@@ -175,8 +182,8 @@ def test_delete_order_removes_resource(
     ids=["zero", "negative"],
 )
 def test_create_order_rejects_non_positive_amount(
-        order_service: OrderService,
-        amount: float,
+    order_service: OrderService,
+    amount: float,
 ) -> None:
     """金额为零或负数时应返回参数校验错误。"""
     response = order_service.create_order(
@@ -197,7 +204,7 @@ def test_create_order_rejects_non_positive_amount(
 
 
 def test_create_order_rejects_invalid_status(
-        order_service: OrderService,
+    order_service: OrderService,
 ) -> None:
     """不在允许集合内的订单状态应返回 422。"""
     response = order_service.create_order(
@@ -219,9 +226,9 @@ def test_create_order_rejects_invalid_status(
 
 
 def test_user_cannot_access_another_users_order(
-        api_client: APIClient,
-        auth_service: AuthService,
-        order_service: OrderService,
+    api_client: APIClient,
+    auth_service: AuthService,
+    order_service: OrderService,
 ) -> None:
     """不同用户之间不能读取或列出对方订单。"""
     first_user_order = _create_valid_order(

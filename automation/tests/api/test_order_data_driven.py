@@ -9,7 +9,14 @@ import pytest
 from core import load_yaml_test_cases
 from services import OrderService
 
-pytestmark = pytest.mark.regression
+pytestmark = [
+    pytest.mark.regression,
+    pytest.mark.flaky(
+        reruns=2,
+        reruns_delay=1,
+        only_rerun=["APITransportError"],
+    ),
+]
 
 DATA_PATH = Path(__file__).resolve().parents[2] / "testdata" / "orders.yaml"
 ORDER_CREATE_CASES = load_yaml_test_cases(DATA_PATH)
