@@ -72,7 +72,7 @@ jobs:
           docker compose logs --no-color \
             > automation/reports/docker-compose.log || true
 
-      - name: Upload automation reports
+      - name: Upload raw automation reports
         id: report
         if: always()
         uses: actions/upload-artifact@v5
@@ -84,7 +84,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-      - name: Write job summary
+      - name: Write test job summary
         if: always()
         env:
           TEST_OUTCOME: ${{ steps.tests.outcome }}
@@ -95,8 +95,8 @@ jobs:
           echo "- 测试结果：\`${TEST_OUTCOME:-not-run}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- 提交：\`${GITHUB_SHA}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- 分支：\`${GITHUB_REF_NAME}\`" >> "$GITHUB_STEP_SUMMARY"
-          echo "- 报告：[下载 HTML、Allure、截图和日志](${REPORT_URL})" >> "$GITHUB_STEP_SUMMARY"
-          echo "- Actions 运行：[查看本次运行](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})" >> "$GITHUB_STEP_SUMMARY"
+          echo "- 原始报告：[下载 artifacts](${REPORT_URL})" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Actions：[查看运行](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Notify Slack on failure
         if: failure() && env.SLACK_WEBHOOK_URL != ''
@@ -106,10 +106,110 @@ jobs:
           curl --fail --silent --show-error \
             --request POST \
             --header 'Content-Type: application/json' \
-            --data "{\"text\":\"自动化测试失败：${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\\n报告：${REPORT_URL}\"}" \
+            --data "{\"text\":\"自动化测试失败：${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}\\n原始报告：${REPORT_URL}\"}" \
             "$SLACK_WEBHOOK_URL"
 
       - name: Stop containers
         if: always()
         run: |
           docker compose down -v
+
+  publish-allure:
+    name: Publish Allure report
+    needs: automation-tests
+    if: ${{ always() && github.event_name != 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Download raw reports
+        uses: actions/download-artifact@v5
+        with:
+          name: automation-reports-${{ github.run_id }}
+          path: downloaded
+
+      - name: Restore Allure history
+        if: always()
+        uses: actions/cache/restore@v4
+        with:
+          path: downloaded/automation/reports/allure-history
+          key: allure-history-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            allure-history-${{ github.ref_name }}-
+
+      - name: Install Java and Allure CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            openjdk-21-jre-headless \
+            unzip
+
+          curl --location --fail --silent --show-error \
+            --output /tmp/allure.zip \
+            https://github.com/allure-framework/allure2/releases/download/2.46.2/allure-2.46.2.zip
+
+          unzip -q /tmp/allure.zip -d /tmp/allure
+          echo "/tmp/allure/allure-2.46.2/bin" >> "$GITHUB_PATH"
+
+      - name: Generate static Allure report
+        run: |
+          RESULTS_DIR="downloaded/automation/reports/docker-allure"
+          HISTORY_DIR="downloaded/automation/reports/allure-history"
+          REPORT_DIR="downloaded/automation/reports/allure-report"
+
+          if [ ! -d "$RESULTS_DIR" ]; then
+            mkdir -p "$REPORT_DIR"
+            cat > "$REPORT_DIR/index.html" <<'HTML'
+          <!doctype html>
+          <html lang="zh-CN">
+            <head><meta charset="utf-8"><title>Allure results missing</title></head>
+            <body><h1>本次运行没有生成 Allure 原始结果</h1></body>
+          </html>
+          HTML
+            exit 0
+          fi
+
+          if [ -d "$HISTORY_DIR" ]; then
+            cp -R "$HISTORY_DIR" "$RESULTS_DIR/history"
+          fi
+
+          allure generate "$RESULTS_DIR" \
+            --output "$REPORT_DIR" \
+            --clean
+
+          rm -rf "$HISTORY_DIR"
+          cp -R "$REPORT_DIR/history" "$HISTORY_DIR"
+
+      - name: Save Allure history
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: downloaded/automation/reports/allure-history
+          key: allure-history-${{ github.ref_name }}-${{ github.run_id }}
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload static Allure report
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: downloaded/automation/reports/allure-report
+
+      - name: Deploy Allure report to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Publish report URL
+        run: |
+          echo "## Allure 报告已发布" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "[打开最新 Allure 报告](${{ steps.deployment.outputs.page_url }})" >> "$GITHUB_STEP_SUMMARY"

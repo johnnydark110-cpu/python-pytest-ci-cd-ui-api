@@ -4,7 +4,7 @@
 
 - 当前阶段：阶段 5（稳定性、并发与 CI/CD 接入）
 - 更新时间：2026-11-20
-- 状态：阶段五第五节课进行中；GitHub 远程仓库和 Actions 已配置，Docker/CI 提交已推送，首次云端运行已触发；当前失败仅因根 Ruff 配置未忽略 FastAPI `Depends()` 的 B008
+- 状态：阶段五第五节课进行中；GitHub Actions 已成功运行并可下载 artifacts；当前 pytest HTML 被三条测试通道重复写同一路径而只剩最后 1 项，完整 41 项结果保存在 Allure 原始结果目录
 
 ## 项目目标
 
@@ -270,13 +270,17 @@
   - CI 工作流提交为 `b1dfac4 添加GitHub Actions自动化测试流水线`。
   - 当前本地 `master` 跟踪 `origin/master`，GitHub Actions 已真实触发。
   - 首次运行在 Ruff 静态检查步骤失败：根目录 `pyproject.toml` 未配置 FastAPI 路由 B008 per-file ignore。
+  - 修复根 Ruff 配置后 CI 已成功执行并上传报告 artifacts。
+  - 下载 artifacts 后包含 `docker-allure/`、`docker-compose.log`、`report.html`。
+  - `report.html` 当前只有 1 条测试，因为 Compose 的三次 pytest 调用都写入 `reports/report.html`，最后 smoke 通道覆盖前两个报告。
+  - `docker-allure/` 聚合了三次容器运行的 41 项测试，是完整测试结果。
 
 ## 待办
 
-- 在根 `pyproject.toml` 为 `app/backend/*.py` 与 `app/backend/routers/*.py` 配置 B008 per-file ignore。
-- 本地确认 `ruff check .` 通过后提交并推送配置修复。
-- 重新观察 GitHub Actions，确认 Docker 构建、三段容器测试、artifacts 和 Job Summary 全部成功。
-- 如配置 Slack Webhook，再做一次受控失败通知验收。
+- 为 Compose 三个 pytest 通道分别输出 `report-parallel.html`、`report-serial.html`、`report-smoke.html`，运行前清理旧的 HTML 报告。
+- 使用 Allure CLI 从 artifacts 的 `docker-allure/` 生成并查看完整 41 项报告。
+- 修正后重新推送 CI，确认三个 HTML 报告和 Allure 原始结果完整。
+- 如配置 Slack Webhook，再完成失败通知验收。
 
 ## 项目结构快照
 
@@ -324,12 +328,14 @@
 - 根目录另有 `pyproject.toml`/`uv.lock` uv 工程，但 `automation/` 才是自动化框架的独立 uv 项目；Docker 设计必须以 `automation/pyproject.toml` 与 `automation/uv.lock` 为测试镜像依赖来源，避免误用根项目依赖。
 - GitHub remote 和 Actions 已配置并成功触发首次运行。
 - 根目录 Ruff 的 B008 per-file ignore 尚未加入根 `pyproject.toml`；`ruff check .` 当前对 FastAPI `Depends()` 报告 6 个 B008，阻断 CI 后续步骤。
+- Compose 三条 pytest 命令共享 `pytest.ini` 的 `--html=reports/report.html`，后运行通道会覆盖前一个 HTML 报告；该文件从设计上不代表完整测试集。
+- Allure `docker-allure/` 是原始结果目录，不是可直接双击查看的静态 HTML；需要使用 `allure serve` 或 `allure generate`。
 
 ## 下一步计划
 
-1. 修正根 Ruff 配置并推送，恢复 `ruff check .`。
-2. 等待 GitHub Actions 完整执行 Docker 构建、41 项容器测试和 artifacts 上传。
-3. CI 通过后进行阶段五总验收。
+1. 修改 Compose 让三个 pytest 通道输出不同 HTML 文件。
+2. 用 Allure CLI 查看并确认 artifacts 中的完整 41 项报告。
+3. 修复 HTML 覆盖后重新触发 CI，完成 CI 报告验收与阶段五总验收。
 
 ## 重要变更
 
@@ -375,4 +381,4 @@
 - 阶段五第二节课完成：注册 `serial` marker，关键订单 UI 串行、其余 UI 双 worker 并行，浏览器慢动作关闭，提交为 `6d0a62c`。
 - 阶段五第三节课完成：pytest-rerunfailures 仅重试 `APITransportError`；临时用例清理提交 `33d89a5`；Docker Engine、WSL2 与 `hello-world` 验证通过。
 - 阶段五第四节课完成：Compose 静态网络、固定 IP、三通道 41 项容器测试和 Allure 产物均通过，学习者确认 Docker 环境复现完成。
-- 阶段五第五节课进行中：GitHub Actions 工作流已真实触发，首次运行定位到根 Ruff B008 配置缺失。
+- 阶段五第五节课进行中：Actions 已成功运行并上传 artifacts；发现 pytest HTML 因重复路径被最后通道覆盖，Allure 完整结果仍需 CLI 查看。

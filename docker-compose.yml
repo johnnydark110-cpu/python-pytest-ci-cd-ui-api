@@ -56,25 +56,30 @@ services:
       - |
         set -eu
 
+        rm -f reports/report*.html
+
         uv run pytest \
           -m "regression and not serial" \
           --env=dev \
           -n 2 \
           -q \
           --alluredir=reports/docker-allure \
-          --clean-alluredir
+          --clean-alluredir \
+          --html=reports/report-parallel.html
 
         uv run pytest \
           -m serial \
           --env=dev \
           -q \
-          --alluredir=reports/docker-allure
+          --alluredir=reports/docker-allure \
+          --html=reports/report-serial.html
 
         uv run pytest \
           -m "smoke and not regression" \
           --env=dev \
           -q \
-          --alluredir=reports/docker-allure
+          --alluredir=reports/docker-allure \
+          --html=reports/report-smoke.html
     restart: "no"
 
 volumes:
