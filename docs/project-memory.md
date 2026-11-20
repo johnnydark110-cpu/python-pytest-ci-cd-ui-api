@@ -4,7 +4,7 @@
 
 - 当前阶段：阶段 5（稳定性、并发与 CI/CD 接入）
 - 更新时间：2026-11-20
-- 状态：阶段五第五节课进行中；GitHub Actions 已成功运行并可下载 artifacts；当前 pytest HTML 被三条测试通道重复写同一路径而只剩最后 1 项，完整 41 项结果保存在 Allure 原始结果目录
+- 状态：阶段五第五节课进行中；GitHub Actions 已发布 GitHub Pages，但 Allure 生成步骤未找到 artifact 中的原始结果并显示 fallback；当前在修正 artifact 解压路径与 HTML 覆盖问题
 
 ## 项目目标
 
@@ -330,12 +330,13 @@
 - 根目录 Ruff 的 B008 per-file ignore 尚未加入根 `pyproject.toml`；`ruff check .` 当前对 FastAPI `Depends()` 报告 6 个 B008，阻断 CI 后续步骤。
 - Compose 三条 pytest 命令共享 `pytest.ini` 的 `--html=reports/report.html`，后运行通道会覆盖前一个 HTML 报告；该文件从设计上不代表完整测试集。
 - Allure `docker-allure/` 是原始结果目录，不是可直接双击查看的静态 HTML；需要使用 `allure serve` 或 `allure generate`。
+- `publish-allure` 当前写死查找 `downloaded/automation/reports/docker-allure`。`actions/upload-artifact` 会按实际上传文件的共同根目录重组路径，且空 screenshots 目录不会进入 artifact，因此常见实际路径是 `downloaded/docker-allure` 或 `downloaded/reports/docker-allure`，导致 Allure 生成步骤进入“没有原始结果”的 fallback。
 
 ## 下一步计划
 
-1. 修改 Compose 让三个 pytest 通道输出不同 HTML 文件。
-2. 用 Allure CLI 查看并确认 artifacts 中的完整 41 项报告。
-3. 修复 HTML 覆盖后重新触发 CI，完成 CI 报告验收与阶段五总验收。
+1. 修改 publish job，用 `find downloaded -type d -name docker-allure` 动态定位原始结果并复制到固定工作目录。
+2. 修改 Compose，让三个 pytest 通道输出不同 HTML 文件。
+3. 重新触发 CI，确认静态 Allure、历史趋势、Pages URL 和 artifacts 完整。
 
 ## 重要变更
 

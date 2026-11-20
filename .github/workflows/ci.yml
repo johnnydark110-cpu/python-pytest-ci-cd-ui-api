@@ -137,11 +137,35 @@ jobs:
           name: automation-reports-${{ github.run_id }}
           path: downloaded
 
+      - name: Inspect downloaded artifact
+        run: |
+          echo "Downloaded tree:"
+          find downloaded -maxdepth 5 -type f -print | sort
+
+      - name: Locate Allure results
+        run: |
+          set -euo pipefail
+
+          RESULTS_DIR="$(find downloaded -type d -name docker-allure -print -quit)"
+
+          if [ -z "$RESULTS_DIR" ]; then
+            echo "ERROR: docker-allure directory was not found."
+            echo "Artifact directories:"
+            find downloaded -maxdepth 5 -type d -print | sort
+            exit 1
+          fi
+
+          mkdir -p allure-work
+          cp -R "$RESULTS_DIR" allure-work/docker-allure
+
+          echo "Allure results source: $RESULTS_DIR"
+          echo "ALLURE_RESULTS_DIR=allure-work/docker-allure" >> "$GITHUB_ENV"
+
       - name: Restore Allure history
         if: always()
         uses: actions/cache/restore@v4
         with:
-          path: downloaded/automation/reports/allure-history
+          path: allure-work/allure-history
           key: allure-history-${{ github.ref_name }}-${{ github.run_id }}
           restore-keys: |
             allure-history-${{ github.ref_name }}-
@@ -162,27 +186,17 @@ jobs:
 
       - name: Generate static Allure report
         run: |
-          RESULTS_DIR="downloaded/automation/reports/docker-allure"
-          HISTORY_DIR="downloaded/automation/reports/allure-history"
-          REPORT_DIR="downloaded/automation/reports/allure-report"
+          set -euo pipefail
 
-          if [ ! -d "$RESULTS_DIR" ]; then
-            mkdir -p "$REPORT_DIR"
-            cat > "$REPORT_DIR/index.html" <<'HTML'
-          <!doctype html>
-          <html lang="zh-CN">
-            <head><meta charset="utf-8"><title>Allure results missing</title></head>
-            <body><h1>本次运行没有生成 Allure 原始结果</h1></body>
-          </html>
-          HTML
-            exit 0
-          fi
+          HISTORY_DIR="allure-work/allure-history"
+          REPORT_DIR="allure-work/allure-report"
 
           if [ -d "$HISTORY_DIR" ]; then
-            cp -R "$HISTORY_DIR" "$RESULTS_DIR/history"
+            mkdir -p "$ALLURE_RESULTS_DIR/history"
+            cp -R "$HISTORY_DIR"/. "$ALLURE_RESULTS_DIR/history"/
           fi
 
-          allure generate "$RESULTS_DIR" \
+          allure generate "$ALLURE_RESULTS_DIR" \
             --output "$REPORT_DIR" \
             --clean
 
@@ -193,7 +207,7 @@ jobs:
         if: always()
         uses: actions/cache/save@v4
         with:
-          path: downloaded/automation/reports/allure-history
+          path: allure-work/allure-history
           key: allure-history-${{ github.ref_name }}-${{ github.run_id }}
 
       - name: Configure GitHub Pages
@@ -202,7 +216,7 @@ jobs:
       - name: Upload static Allure report
         uses: actions/upload-pages-artifact@v3
         with:
-          path: downloaded/automation/reports/allure-report
+          path: allure-work/allure-report
 
       - name: Deploy Allure report to GitHub Pages
         id: deployment
