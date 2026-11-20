@@ -2,9 +2,9 @@
 
 ## 当前状态
 
-- 当前阶段：阶段 5（稳定性、并发与 CI/CD 接入）
+- 当前阶段：阶段 6（测试数据、鉴权、契约与混合场景）
 - 更新时间：2026-11-20
-- 状态：阶段五第五节课已完成并经学习者确认；CI 已修复 artifact 路径、生成静态 Allure 并发布 GitHub Pages，现进入阶段五总验收
+- 状态：阶段五已由学习者确认完成并提交；阶段六第一节课进行中，准备用 Faker 建立动态、并发安全的用户与订单测试数据生成器
 
 ## 项目目标
 
@@ -281,13 +281,20 @@
   - 修复提交为 `2eec476 修复CI中Allure结果路径并自动发布报告`。
   - 本地 `docker-allure` 当前包含约 395 个结果/附件文件，三个 HTML 报告均已生成。
   - 根目录 `ruff check .` 通过。
+- 阶段五总验收已完成并经学习者确认：
+  - 本地 API 串行/双 worker、UI 非 serial 并行与 serial 串行、全量 41 项均通过。
+  - Docker Compose 一键执行、三个 HTML 报告和完整 Allure 结果通过。
+  - GitHub Actions 成功执行测试、上传 artifacts、生成静态 Allure 并发布 GitHub Pages。
+  - GitHub Pages 报告可查看完整测试结果、步骤、附件和历史趋势。
+  - 使用 `ci/failure-drill` 和 Pull Request 完成失败阻断、artifacts 与通知链路演练；临时分支已清理。
+  - 正式主分支工作区干净，最新提交为 `69fe7d7 完成阶段五最终验收流程`。
 
 ## 待办
 
-- 完成阶段五总验收：本地 41 项、API 双 worker、UI 并行/串行、Docker Compose 和 GitHub Actions。
-- 打开 GitHub Pages Allure，确认 41 项结果、历史趋势、步骤、请求响应附件与失败截图。
-- 验证失败会阻断 CI，并确认 GitHub Actions 或已配置 Slack 的通知包含报告入口。
-- 清理 `automation/pyproject.toml` 中不生效的 B008 重复配置，确认工作区与根 Ruff 状态。
+- 使用 uv 安装并锁定 `faker` 开发依赖。
+- 创建 `automation/utils/data_generator.py`，生成符合真实接口约束的用户与订单数据。
+- 使用 UUID 后缀与随机 Faker 内容保证并发和多次运行中的数据唯一性。
+- 创建单元测试验证字段长度、金额、状态、显式覆盖和批量唯一性。
 
 ## 项目结构快照
 
@@ -338,14 +345,14 @@
 - Compose 三条 pytest 命令共享 `pytest.ini` 的 `--html=reports/report.html`，后运行通道会覆盖前一个 HTML 报告；该文件从设计上不代表完整测试集。
 - Allure `docker-allure/` 是原始结果目录，不是可直接双击查看的静态 HTML；需要使用 `allure serve` 或 `allure generate`。
 - `publish-allure` 当前写死查找 `downloaded/automation/reports/docker-allure`。`actions/upload-artifact` 会按实际上传文件的共同根目录重组路径，且空 screenshots 目录不会进入 artifact，因此常见实际路径是 `downloaded/docker-allure` 或 `downloaded/reports/docker-allure`，导致 Allure 生成步骤进入“没有原始结果”的 fallback。
-- `automation/pyproject.toml` 仍保留了面向根目录 app 路径的 B008 per-file ignore；该配置不作用于根目录 app，已由根 `pyproject.toml` 承担，当前属于待清理的重复配置。
-- 阶段五总验收仍需确认 Slack secret 是否存在；未配置时只能依赖 GitHub Actions 原生失败状态与 Job Summary 链接，不能宣称外部 Slack 通知已完成。
+- Faker 生成的数据必须继续包含 UUID 后缀或等价唯一标识，不能只依赖随机单词；pytest-xdist 多 worker 与重复运行都需要避免用户名/订单标题碰撞。
+- 数据生成器只生成输入数据，不负责注册、创建订单和清理；数据准备与清理将在后续 fixture/db_client 课程完成。
 
 ## 下一步计划
 
-1. 执行阶段五总验收的本地、Docker、CI 与 GitHub Pages 检查。
-2. 用可控失败用例验证 CI 阻断和通知，验收后立即恢复绿色流水线。
-3. 清理重复 B008 配置，提交阶段五成果并准备进入阶段六。
+1. 完成阶段六第一课：安装 Faker，创建数据生成器并编写字段与唯一性单元测试。
+2. 第一课通过后建立用户/订单 fixture 的 setup 与 teardown 数据生命周期。
+3. 随后实现 `core/db_client.py`，做数据库校验与清理。
 
 ## 重要变更
 
@@ -392,4 +399,5 @@
 - 阶段五第三节课完成：pytest-rerunfailures 仅重试 `APITransportError`；临时用例清理提交 `33d89a5`；Docker Engine、WSL2 与 `hello-world` 验证通过。
 - 阶段五第四节课完成：Compose 静态网络、固定 IP、三通道 41 项容器测试和 Allure 产物均通过，学习者确认 Docker 环境复现完成。
 - 阶段五第五节课完成：CI 自动生成并发布静态 Allure 到 GitHub Pages，HTML 分通道输出，学习者确认通过。
-- 阶段五总验收开始：核对本地/Docker/CI 稳定性、Pages 报告趋势、失败阻断与通知闭环。
+- 阶段五总验收完成：本地、Docker、GitHub Actions、Pages、历史趋势与失败演练全部通过，主分支提交为 `69fe7d7`。
+- 阶段六开始：准备用 Faker 与 UUID 建立并发安全、符合接口约束的动态测试数据生成器。

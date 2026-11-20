@@ -11,6 +11,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "allure-pytest>=2.16.2",
+    "faker>=40.54.0",
     "playwright>=1.65.2",
     "pytest>=9.2.0",
     "pytest-html>=4.2.0",
@@ -19,4 +20,4 @@ dev = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["config", "core", "services", "tests"]
+known-first-party = ["config", "core", "services", "tests", "utils"]
