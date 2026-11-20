@@ -6,7 +6,10 @@ import pytest
 
 from pages import LoginPage, OrderPage
 
-pytestmark = pytest.mark.regression
+pytestmark = [
+    pytest.mark.regression,
+    pytest.mark.serial,
+]
 
 
 def test_order_ui_crud_flow(

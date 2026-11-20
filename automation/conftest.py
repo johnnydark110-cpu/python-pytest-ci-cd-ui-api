@@ -42,7 +42,7 @@ def browser_manager() -> Iterator[BrowserManager]:
     """整个测试会话共享一个 Chromium 浏览器进程。"""
     with BrowserManager(
         headless=True,
-        slow_mo=1000,
+        slow_mo=0,
     ) as manager:
         yield manager
 

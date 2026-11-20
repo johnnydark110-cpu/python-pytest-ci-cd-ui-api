@@ -3,8 +3,8 @@
 ## 当前状态
 
 - 当前阶段：阶段 5（稳定性、并发与 CI/CD 接入）
-- 更新时间：2026-11-19
-- 状态：阶段四已由学习者确认完成并提交；阶段五第一节课进行中，准备安装 pytest-xdist 并建立 API 用例并行执行基线
+- 更新时间：2026-11-20
+- 状态：阶段五第一节课已完成并经学习者确认；第二节课进行中，准备注册 `serial` marker，并建立 UI 非关键用例并行、关键用例串行的分流策略
 
 ## 项目目标
 
@@ -222,13 +222,20 @@
   - 完整测试基线为 41 passed，浏览器 context 隔离和正常释放已验证。
   - 阶段四全部代码已提交为 `a245ef2 完成基于playwright的UI基础自动化测试`，当前工作区干净。
   - 浏览器正式配置仍为 `headless=False`、`slow_mo=1000`，阶段五 CI 前必须切换为无头模式。
+- 阶段五第一节课已完成并经学习者确认：
+  - 安装并锁定 `pytest-xdist 3.8.0` 开发依赖。
+  - 22 条 API 测试串行基线与 `-n 2` 并行执行均通过。
+  - 并行 API 测试连续执行稳定，随机用户和数据隔离没有产生 `database is locked`。
+  - 已生成 `reports/allure-api-parallel`，包含完整并行 API 结果。
+  - 代码已提交为 `34c9fc8 添加pytest-xdist实现api并发执行`，当前工作区干净。
+  - 浏览器已切为 `headless=True`，但仍保留 `slow_mo=1000`。
 
 ## 待办
 
-- 使用 uv 安装并锁定 `pytest-xdist` 开发依赖。
-- 先建立 API 测试串行基线，再用 `-n 2` 并行执行 22 条 API 测试。
-- 连续多次执行并行 API 测试，确认随机用户与独立订单数据不会互相污染。
-- 生成并行 Allure 报告，确认所有用例与 worker 执行结果完整。
+- 在 `pytest.ini` 注册 `serial` marker，说明该组不得放入 xdist 并行通道。
+- 将关键订单 CRUD UI 用例标记为 `serial`，保持浏览器接线、BasePage 和登录 UI 用例可并行。
+- 将浏览器 `slow_mo` 调整为 `0`，避免并行 UI 的人为延迟。
+- 分别验证 5 条非关键 UI 测试 `-n 2` 并行、1 条关键 UI 测试无 xdist 串行，以及全量串行基线。
 
 ## 项目结构快照
 
@@ -260,15 +267,15 @@
 - 浏览器必须按“session 级 browser、function 级 context/page”管理：复用昂贵的 Chromium 进程，同时让每条 UI 测试拥有隔离的 Cookie、localStorage 和页面状态。
 - Codex 沙箱当前无法读取 `%LOCALAPPDATA%\ms-playwright` 目录，但学习者本地已确认 Chromium 可启动；实际验收以学习者终端输出为准。
 - UI 定位必须优先集中在页面对象/基础页面层，测试用例不直接重复编写 CSS/XPath；等待使用 Playwright 的显式断言，不使用固定 `sleep`。
-- 当前浏览器 fixtures 仍使用 `headless=False` 和 `slow_mo=1000`；阶段五后续 CI 工作前应切回 `headless=True` 并去掉慢动作。
+- 当前浏览器 fixtures 已使用 `headless=True`，但仍保留 `slow_mo=1000`；并行 UI 与 CI 前必须改为 `slow_mo=0`。
 - API 测试可以并行，UI 测试暂不放进 xdist 全量并行；后续需要单独设计 UI 并行/串行策略。
 - UI 失败 hook 只能附加截图，不能改变原测试结果；截图异常必须被捕获并单独记录。
 
 ## 下一步计划
 
-1. 完成阶段五第一课：安装 pytest-xdist，验证 22 条 API 测试以 2 个 worker 稳定并行执行。
-2. 并行基线通过后设计 UI `serial` marker 与并行/串行执行边界。
-3. 随后引入 pytest-rerunfailures，仅重试网络/环境类失败。
+1. 完成阶段五第二课：注册 `serial` marker，建立 UI 并行/串行分流并验证关键订单用例串行执行。
+2. 第二课通过后引入 pytest-rerunfailures，只重试网络/环境类失败。
+3. 随后进入 Docker 与 CI/CD 环境复现课程。
 
 ## 重要变更
 
@@ -310,4 +317,5 @@
 - 阶段四第五节课完成：新增 `OrderPage` 与订单 CRUD UI 闭环，学习者确认通过。
 - 阶段四第六节课完成：实现 UI 失败自动截图、Allure PNG 附件和截图异常隔离，学习者确认通过。
 - 阶段四总验收完成：学习者确认 UI 自动化稳定性、页面对象、失败截图和浏览器资源管理；代码提交为 `a245ef2`。
-- 阶段五开始：准备用 pytest-xdist 为 API 测试建立并行执行能力，UI 并行策略留到后续课程。
+- 阶段五第一节课完成：pytest-xdist 3.8.0 已锁定，22 条 API 测试通过双 worker 并行验收，提交为 `34c9fc8`。
+- 阶段五第二节课开始：准备用 `serial` marker 建立 UI 并行/串行执行边界并去除浏览器慢动作。
