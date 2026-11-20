@@ -4,7 +4,7 @@
 
 - 当前阶段：阶段 6（测试数据、鉴权、契约与混合场景）
 - 更新时间：2026-11-20
-- 状态：阶段五已由学习者确认完成并提交；阶段六第一节课进行中，准备用 Faker 建立动态、并发安全的用户与订单测试数据生成器
+- 状态：阶段六第一节课已完成并经学习者确认；第二节课进行中，准备把 Faker 生成器接入用户与订单 fixtures，验证 setup/teardown 和订单清理
 
 ## 项目目标
 
@@ -288,13 +288,19 @@
   - GitHub Pages 报告可查看完整测试结果、步骤、附件和历史趋势。
   - 使用 `ci/failure-drill` 和 Pull Request 完成失败阻断、artifacts 与通知链路演练；临时分支已清理。
   - 正式主分支工作区干净，最新提交为 `69fe7d7 完成阶段五最终验收流程`。
+- 阶段六第一节课已完成并经学习者确认：
+  - 安装并锁定 `faker 40.54.0` 为自动化框架开发依赖。
+  - 创建 `utils/data_generator.py` 与 `utils/__init__.py`。
+  - `TestDataFactory` 生成带 UUID 的唯一用户名和订单标题，密码与金额、状态符合接口约束。
+  - `UserData.password` 设置 `repr=False`，避免调试输出密码。
+  - 新增 3 条 regression 单元测试，验证用户/订单合法性与批量唯一性、显式覆盖和非法值拒绝。
+  - 根目录 `ruff check .` 通过，阶段六第一课提交为 `76db318 添加Faker动态测试数据生成器`。
 
 ## 待办
 
-- 使用 uv 安装并锁定 `faker` 开发依赖。
-- 创建 `automation/utils/data_generator.py`，生成符合真实接口约束的用户与订单数据。
-- 使用 UUID 后缀与随机 Faker 内容保证并发和多次运行中的数据唯一性。
-- 创建单元测试验证字段长度、金额、状态、显式覆盖和批量唯一性。
+- 在 `conftest.py` 增加 session 级 `data_factory` fixture，并让 `auth_user` 复用生成器。
+- 增加订单数据 fixture 和已持久化订单 fixture，setup 时通过 API 创建订单，teardown 时删除并验证 404。
+- 新增 API 用例验证 fixture 生成的数据、资源可查询以及不同测试的数据隔离。
 
 ## 项目结构快照
 
@@ -350,9 +356,9 @@
 
 ## 下一步计划
 
-1. 完成阶段六第一课：安装 Faker，创建数据生成器并编写字段与唯一性单元测试。
-2. 第一课通过后建立用户/订单 fixture 的 setup 与 teardown 数据生命周期。
-3. 随后实现 `core/db_client.py`，做数据库校验与清理。
+1. 完成阶段六第二课：接入 data_factory、order_data、created_order fixtures 和资源清理测试。
+2. 第二课通过后实现 `core/db_client.py`，处理用户等没有删除 API 的数据清理。
+3. 随后进入 token 缓存/刷新与 JSON Schema 契约测试。
 
 ## 重要变更
 
@@ -400,4 +406,5 @@
 - 阶段五第四节课完成：Compose 静态网络、固定 IP、三通道 41 项容器测试和 Allure 产物均通过，学习者确认 Docker 环境复现完成。
 - 阶段五第五节课完成：CI 自动生成并发布静态 Allure 到 GitHub Pages，HTML 分通道输出，学习者确认通过。
 - 阶段五总验收完成：本地、Docker、GitHub Actions、Pages、历史趋势与失败演练全部通过，主分支提交为 `69fe7d7`。
-- 阶段六开始：准备用 Faker 与 UUID 建立并发安全、符合接口约束的动态测试数据生成器。
+- 阶段六第一节课完成：Faker 动态数据生成器与 3 条单元测试落地，提交为 `76db318`。
+- 阶段六第二节课开始：准备用 fixtures 管理订单数据的创建、使用和 API 删除清理。

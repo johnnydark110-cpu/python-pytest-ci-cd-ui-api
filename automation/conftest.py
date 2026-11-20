@@ -3,7 +3,7 @@
 import logging
 from collections.abc import Iterator
 from pathlib import Path
-from uuid import uuid4
+from typing import Any
 
 import pytest
 from playwright.sync_api import BrowserContext, Page
@@ -22,6 +22,7 @@ from core import (
 )
 from pages import BasePage
 from services import AuthService, OrderService
+from utils import OrderData, TestDataFactory
 
 CONFIG_DIR = Path(__file__).resolve().parent / "config"
 logger = get_logger(__name__)
@@ -190,12 +191,22 @@ def auth_service(api_client: APIClient) -> AuthService:
     return AuthService(api_client)
 
 
+@pytest.fixture(scope="session")
+def data_factory() -> TestDataFactory:
+    """整个 worker 会话共享一个动态数据生成器。"""
+    return TestDataFactory()
+
+
 @pytest.fixture(scope="function")
-def auth_user() -> dict[str, str]:
-    suffix = uuid4().hex[:10]
+def auth_user(
+    data_factory: TestDataFactory,
+) -> dict[str, str]:
+    """为当前测试生成唯一用户数据。"""
+    user = data_factory.user()
+
     return {
-        "username": f"api_{suffix}",
-        "password": "secret123",
+        "username": user.username,
+        "password": user.password,
     }
 
 
@@ -221,3 +232,39 @@ def token(
 @pytest.fixture(scope="function")
 def order_service(api_client: APIClient, token: str) -> OrderService:
     return OrderService(api_client, token)
+
+
+@pytest.fixture(scope="function")
+def order_data(
+    data_factory: TestDataFactory,
+) -> OrderData:
+    """生成当前测试使用的订单输入数据。"""
+    return data_factory.order()
+
+
+@pytest.fixture(scope="function")
+def created_order(
+    order_data: OrderData,
+    order_service: OrderService,
+) -> Iterator[tuple[OrderData, dict[str, Any]]]:
+    """通过 API 创建订单，并在测试结束后删除和确认清理。"""
+    response = order_service.create_order(
+        title=order_data.title,
+        amount=order_data.amount,
+        status=order_data.status,
+    )
+    assert response.status_code == 201, response.text
+
+    created = response.json()
+    order_id = created["id"]
+
+    try:
+        yield order_data, created
+    finally:
+        delete_response = order_service.delete_order(order_id)
+        assert delete_response.status_code in {204, 404}, (
+            f"订单清理失败: {delete_response.status_code} {delete_response.text}"
+        )
+
+        missing_response = order_service.get_order(order_id)
+        assert missing_response.status_code == 404, "订单删除后仍可查询，数据清理未完成"
