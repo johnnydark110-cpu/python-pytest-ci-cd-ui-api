@@ -12,6 +12,7 @@ from config import Settings
 from core import (
     APIClient,
     BrowserManager,
+    DBClient,
     attach_redacted_json,
     attach_screenshot,
     configure_logging,
@@ -146,6 +147,12 @@ def settings(request: pytest.FixtureRequest) -> Settings:
 
 
 @pytest.fixture(scope="session")
+def db_client(settings: Settings) -> DBClient:
+    """提供 SQLite 测试数据校验与清理客户端。"""
+    return DBClient(settings.database_path)
+
+
+@pytest.fixture(scope="session")
 def session_context() -> Iterator[dict[str, str]]:
     """整个测试会话只创建一次的共享上下文。"""
     print("\n[fixture setup] session_context")
@@ -200,14 +207,22 @@ def data_factory() -> TestDataFactory:
 @pytest.fixture(scope="function")
 def auth_user(
     data_factory: TestDataFactory,
-) -> dict[str, str]:
-    """为当前测试生成唯一用户数据。"""
+    db_client: DBClient,
+) -> Iterator[dict[str, str]]:
+    """生成唯一用户，并在测试结束后删除用户及关联数据。"""
     user = data_factory.user()
-
-    return {
+    user_dict = {
         "username": user.username,
         "password": user.password,
     }
+
+    try:
+        yield user_dict
+    finally:
+        db_client.delete_user_by_username(user.username)
+        assert not db_client.user_exists(user.username), (
+            f"测试用户清理失败: {user.username}"
+        )
 
 
 @pytest.fixture(scope="function")

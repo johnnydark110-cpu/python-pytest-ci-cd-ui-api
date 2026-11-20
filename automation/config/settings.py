@@ -10,6 +10,8 @@ import yaml
 from pydantic import AnyHttpUrl, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+DEFAULT_DATABASE_PATH = Path(__file__).resolve().parents[2] / "app" / "data" / "app.db"
+
 
 class Settings(BaseSettings):
     """测试环境配置模型。"""
@@ -28,6 +30,7 @@ class Settings(BaseSettings):
         le=120,
     )
     verify_ssl: bool = True
+    database_path: Path = DEFAULT_DATABASE_PATH
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> Settings:

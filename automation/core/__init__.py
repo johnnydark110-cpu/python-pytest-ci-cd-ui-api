@@ -2,6 +2,7 @@
 
 from .allure_utils import attach_redacted_json, attach_screenshot
 from .api_client import APIClient
+from .db_client import DBClient
 from .exceptions import (
     APIClientError,
     APIResponseError,
@@ -25,6 +26,7 @@ __all__ = [
     "APITransportError",
     "AutomationError",
     "BrowserManager",
+    "DBClient",
     "attach_redacted_json",
     "attach_screenshot",
     "configure_logging",

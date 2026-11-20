@@ -44,9 +44,11 @@ services:
       AUTOMATION_ENVIRONMENT: dev
       AUTOMATION_BASE_URL: http://172.30.0.10:8000
       AUTOMATION_TIMEOUT_SECONDS: "15"
+      AUTOMATION_DATABASE_PATH: /workspace/app/data/app.db
     volumes:
       - ./automation/reports:/workspace/reports
       - ./automation/screenshots:/workspace/screenshots
+      - app-data:/workspace/app/data
     shm_size: "1gb"
     networks:
       - testnet

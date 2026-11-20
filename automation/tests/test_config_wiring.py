@@ -1,6 +1,7 @@
 """命令行环境选择与最终配置接线测试。"""
 
 import os
+from pathlib import Path
 
 import pytest
 
@@ -63,6 +64,15 @@ def test_cli_environment_configures_fixtures(
     assert str(settings.base_url).rstrip("/") == expected_base_url
     assert settings.timeout_seconds == expected_timeout
     assert settings.verify_ssl is expected_verify_ssl
+
+    database_path_value = os.getenv("AUTOMATION_DATABASE_PATH")
+    expected_database_path = (
+        Path(database_path_value)
+        if database_path_value is not None
+        else Path(__file__).resolve().parents[2] / "app" / "data" / "app.db"
+    )
+
+    assert settings.database_path == expected_database_path
 
     assert base_url == expected_base_url
     assert api_client.base_url == expected_base_url

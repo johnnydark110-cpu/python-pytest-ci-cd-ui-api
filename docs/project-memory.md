@@ -4,7 +4,7 @@
 
 - 当前阶段：阶段 6（测试数据、鉴权、契约与混合场景）
 - 更新时间：2026-11-20
-- 状态：阶段六第一节课已完成并经学习者确认；第二节课进行中，准备把 Faker 生成器接入用户与订单 fixtures，验证 setup/teardown 和订单清理
+- 状态：阶段六第二节课已完成并经学习者确认；第三节课进行中，准备实现 SQLite `DBClient`，清理无删除 API 的用户及其订单/会话并做数据库存在性校验
 
 ## 项目目标
 
@@ -295,12 +295,21 @@
   - `UserData.password` 设置 `repr=False`，避免调试输出密码。
   - 新增 3 条 regression 单元测试，验证用户/订单合法性与批量唯一性、显式覆盖和非法值拒绝。
   - 根目录 `ruff check .` 通过，阶段六第一课提交为 `76db318 添加Faker动态测试数据生成器`。
+- 阶段六第二节课已完成并经学习者确认：
+  - `conftest.py` 增加 session 级 `data_factory` 和 function 级 `order_data`、`created_order` fixtures。
+  - `auth_user` 改为复用 Faker 生成器，同时保持现有 `username/password` 字典接口。
+  - `created_order` 通过 API 创建订单，teardown 删除后再次查询并断言 404。
+  - 新增 2 条数据生命周期 API 测试，验证动态数据持久化和测试间查询隔离。
+  - 现有鉴权、订单和 UI 用例兼容 Faker 动态密码，完整测试基线提升到 46 passed。
+  - 代码提交为 `9806d1c 增加fixture测试数据生命周期管理`。
 
 ## 待办
 
-- 在 `conftest.py` 增加 session 级 `data_factory` fixture，并让 `auth_user` 复用生成器。
-- 增加订单数据 fixture 和已持久化订单 fixture，setup 时通过 API 创建订单，teardown 时删除并验证 404。
-- 新增 API 用例验证 fixture 生成的数据、资源可查询以及不同测试的数据隔离。
+- 创建 `core/db_client.py` 与 `core/__init__.py` 导出，提供用户存在性、订单存在性、按用户名清理用户及相关订单/session 的能力。
+- 在 Settings 增加 `database_path`，默认指向根项目 `app/data/app.db`，支持 `AUTOMATION_DATABASE_PATH` 覆盖。
+- 在 conftest 增加 session 级 `db_client` fixture，并让 `auth_user` teardown 自动清理用户及关联数据。
+- 在 Compose 中把 `app-data` 同时挂载给 automation，并注入容器数据库路径。
+- 新增数据库清理测试，并处理现有用户隔离测试中手工创建的第二用户清理。
 
 ## 项目结构快照
 
@@ -356,9 +365,9 @@
 
 ## 下一步计划
 
-1. 完成阶段六第二课：接入 data_factory、order_data、created_order fixtures 和资源清理测试。
-2. 第二课通过后实现 `core/db_client.py`，处理用户等没有删除 API 的数据清理。
-3. 随后进入 token 缓存/刷新与 JSON Schema 契约测试。
+1. 完成阶段六第三课：实现 DBClient、数据库路径配置、用户/订单/session 清理和数据库存在性测试。
+2. 第三课通过后进入 token 获取缓存、失效检测与刷新策略。
+3. 随后建立 JSON Schema 响应契约测试。
 
 ## 重要变更
 
@@ -407,4 +416,5 @@
 - 阶段五第五节课完成：CI 自动生成并发布静态 Allure 到 GitHub Pages，HTML 分通道输出，学习者确认通过。
 - 阶段五总验收完成：本地、Docker、GitHub Actions、Pages、历史趋势与失败演练全部通过，主分支提交为 `69fe7d7`。
 - 阶段六第一节课完成：Faker 动态数据生成器与 3 条单元测试落地，提交为 `76db318`。
-- 阶段六第二节课开始：准备用 fixtures 管理订单数据的创建、使用和 API 删除清理。
+- 阶段六第二节课完成：动态用户与订单 fixtures、API 创建和 teardown 删除/404 验证落地，提交为 `9806d1c`。
+- 阶段六第三节课开始：准备实现 SQLite `DBClient`，补齐测试用户及关联数据的直接清理和数据库级校验。

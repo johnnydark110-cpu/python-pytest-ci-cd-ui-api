@@ -5,8 +5,9 @@ from uuid import uuid4
 
 import pytest
 
-from core import APIClient
+from core import APIClient, DBClient
 from services import AuthService, OrderService
+from utils import TestDataFactory
 
 pytestmark = [
     pytest.mark.regression,
@@ -229,6 +230,8 @@ def test_user_cannot_access_another_users_order(
     api_client: APIClient,
     auth_service: AuthService,
     order_service: OrderService,
+    db_client: DBClient,
+    data_factory: TestDataFactory,
 ) -> None:
     """不同用户之间不能读取或列出对方订单。"""
     first_user_order = _create_valid_order(
@@ -236,25 +239,29 @@ def test_user_cannot_access_another_users_order(
         title=f"用户隔离-{uuid4().hex[:8]}",
     )
 
-    second_username = f"api_{uuid4().hex[:10]}"
-    second_password = "secret123"
-    register_response = auth_service.register(
-        username=second_username,
-        password=second_password,
-    )
-    assert register_response.status_code == 201
+    second_user = data_factory.user()
 
-    second_token = auth_service.get_token(
-        username=second_username,
-        password=second_password,
-    )
-    second_user_orders = OrderService(api_client, second_token)
+    try:
+        register_response = auth_service.register(
+            username=second_user.username,
+            password=second_user.password,
+        )
+        assert register_response.status_code == 201
 
-    list_response = second_user_orders.list_orders()
-    assert list_response.status_code == 200
-    assert list_response.json()["total"] == 0
-    assert list_response.json()["items"] == []
+        second_token = auth_service.get_token(
+            username=second_user.username,
+            password=second_user.password,
+        )
+        second_user_orders = OrderService(api_client, second_token)
 
-    detail_response = second_user_orders.get_order(first_user_order["id"])
-    assert detail_response.status_code == 404
-    assert detail_response.json()["detail"] == "订单不存在"
+        list_response = second_user_orders.list_orders()
+        assert list_response.status_code == 200
+        assert list_response.json()["total"] == 0
+        assert list_response.json()["items"] == []
+
+        detail_response = second_user_orders.get_order(first_user_order["id"])
+        assert detail_response.status_code == 404
+        assert detail_response.json()["detail"] == "订单不存在"
+    finally:
+        db_client.delete_user_by_username(second_user.username)
+        assert not db_client.user_exists(second_user.username)
