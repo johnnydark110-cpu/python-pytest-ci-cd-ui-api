@@ -4,7 +4,7 @@
 
 - 当前阶段：阶段 5（稳定性、并发与 CI/CD 接入）
 - 更新时间：2026-11-20
-- 状态：阶段五第四节课已完成并经学习者确认；第五节课进行中，准备创建 GitHub Actions CI 工作流，但当前仓库尚无 Git remote，云端触发需先创建并推送远程仓库
+- 状态：阶段五第五节课进行中；GitHub 远程仓库和 Actions 已配置，Docker/CI 提交已推送，首次云端运行已触发；当前失败仅因根 Ruff 配置未忽略 FastAPI `Depends()` 的 B008
 
 ## 项目目标
 
@@ -264,13 +264,19 @@
   - 配置接线测试已适配 Docker 环境变量覆盖。
   - Docker、Compose 与容器化测试环境形成可复现闭环。
   - Docker 文件与相关代码修改尚未提交。
+- 阶段五第五节课已创建并触发首次 CI：
+  - 创建并推送 `.github/workflows/ci.yml`。
+  - Docker 环境提交为 `91afe03 添加Docker容器化测试环境`。
+  - CI 工作流提交为 `b1dfac4 添加GitHub Actions自动化测试流水线`。
+  - 当前本地 `master` 跟踪 `origin/master`，GitHub Actions 已真实触发。
+  - 首次运行在 Ruff 静态检查步骤失败：根目录 `pyproject.toml` 未配置 FastAPI 路由 B008 per-file ignore。
 
 ## 待办
 
-- 创建 `.github/workflows/ci.yml`，在 push、pull request 和手动触发时构建 Compose 环境并执行三通道测试。
-- CI 上传 HTML、Allure、截图和 Docker 日志 artifacts，并在 Job Summary 中输出报告链接和测试结果。
-- 配置可选 Slack Webhook 失败通知；未配置 secret 时不发送外部通知。
-- 创建 GitHub 远程仓库并推送当前提交，完成一次真实 Actions 触发验收。
+- 在根 `pyproject.toml` 为 `app/backend/*.py` 与 `app/backend/routers/*.py` 配置 B008 per-file ignore。
+- 本地确认 `ruff check .` 通过后提交并推送配置修复。
+- 重新观察 GitHub Actions，确认 Docker 构建、三段容器测试、artifacts 和 Job Summary 全部成功。
+- 如配置 Slack Webhook，再做一次受控失败通知验收。
 
 ## 项目结构快照
 
@@ -316,15 +322,14 @@
 - 根目录执行 `ruff check .` 会把 FastAPI 路由中的 `Depends(...)` 默认参数判定为 B008；这是项目应用层的 FastAPI 惯用写法。`ruff check app --ignore B008` 已通过，后续可在根 Ruff 配置对 `app/backend/**/*.py` 做 B008 per-file ignore，或继续只检查 `automation/`。
 - `docker compose ps` 为空表示当前未启动服务，不等于 Compose 配置失败；执行测试前需要先启动 app。
 - 根目录另有 `pyproject.toml`/`uv.lock` uv 工程，但 `automation/` 才是自动化框架的独立 uv 项目；Docker 设计必须以 `automation/pyproject.toml` 与 `automation/uv.lock` 为测试镜像依赖来源，避免误用根项目依赖。
-- 当前 git 仓库没有配置任何 remote，也没有 `.github/` 工作流或 GitHub CLI `gh`；GitHub Actions 无法在本地仓库直接触发。
-- 根目录 Ruff 的 B008 per-file ignore 当前被放在 `automation/pyproject.toml`，不会可靠覆盖根目录 app 路径；CI 若检查全仓 Ruff，需要把配置移到根 `pyproject.toml`，否则先使用 `ruff check automation`。
+- GitHub remote 和 Actions 已配置并成功触发首次运行。
+- 根目录 Ruff 的 B008 per-file ignore 尚未加入根 `pyproject.toml`；`ruff check .` 当前对 FastAPI `Depends()` 报告 6 个 B008，阻断 CI 后续步骤。
 
 ## 下一步计划
 
-1. 完成阶段五第五课：创建 GitHub Actions CI 工作流并验证 YAML/Compose 引用。
-2. 修正根目录 Ruff 配置，使 CI 可选择执行全仓静态检查。
-3. 创建 GitHub 远程仓库、提交 Docker/CI 变更并完成真实 Actions 触发验收。
-4. CI 通过后进入阶段五总验收。
+1. 修正根 Ruff 配置并推送，恢复 `ruff check .`。
+2. 等待 GitHub Actions 完整执行 Docker 构建、41 项容器测试和 artifacts 上传。
+3. CI 通过后进行阶段五总验收。
 
 ## 重要变更
 
@@ -370,4 +375,4 @@
 - 阶段五第二节课完成：注册 `serial` marker，关键订单 UI 串行、其余 UI 双 worker 并行，浏览器慢动作关闭，提交为 `6d0a62c`。
 - 阶段五第三节课完成：pytest-rerunfailures 仅重试 `APITransportError`；临时用例清理提交 `33d89a5`；Docker Engine、WSL2 与 `hello-world` 验证通过。
 - 阶段五第四节课完成：Compose 静态网络、固定 IP、三通道 41 项容器测试和 Allure 产物均通过，学习者确认 Docker 环境复现完成。
-- 阶段五第五节课开始：准备创建 GitHub Actions 工作流，并将测试、报告归档和失败通知串成 CI。
+- 阶段五第五节课进行中：GitHub Actions 工作流已真实触发，首次运行定位到根 Ruff B008 配置缺失。

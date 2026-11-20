@@ -23,3 +23,7 @@ build-backend = "uv_build"
 dev = [
     "pytest-rerunfailures>=16.7",
 ]
+
+[tool.ruff.lint.per-file-ignores]
+"app/backend/*.py" = ["B008"]
+"app/backend/routers/*.py" = ["B008"]
