@@ -20,5 +20,3 @@ dev = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["config", "core", "services", "tests"]
-
-

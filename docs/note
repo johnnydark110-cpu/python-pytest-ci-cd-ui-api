@@ -140,3 +140,30 @@ ApiClient 知识点
         uv lock --check
         git diff --check
         git status --short
+
+
+        添加pytest-rerunfailures
+        Set-Location 'E:\python-pytest-ci-cd-ui-api\automation'
+
+        uv add --dev pytest-rerunfailures
+        uv lock --check
+        uv pip show pytest-rerunfailures
+
+        确认插件已加载
+        uv run pytest --help | Select-String `
+            -Pattern 'reruns|only-rerun' `
+            -Context 0,1
+
+        确认flaky标签
+        uv run pytest --markers | Select-String `
+        -Pattern '^@pytest.mark.flaky'
+
+        理解only_rerun
+        pytest.mark.flaky(
+            reruns=2,
+            reruns_delay=1,
+            only_rerun=["APITransportError"],
+        )
+        reruns=2：第一次失败后最多再尝试两次
+        reruns_delay=1：每次重试前等待 1 秒
+        only_rerun：只有异常类名为 APITransportError 时才重试
