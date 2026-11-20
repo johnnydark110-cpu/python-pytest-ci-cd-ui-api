@@ -22,7 +22,7 @@ from core import (
     stop_request_history,
 )
 from pages import BasePage
-from services import AuthService, OrderService
+from services import AuthService, OrderService, TokenManager
 from utils import OrderData, TestDataFactory
 
 CONFIG_DIR = Path(__file__).resolve().parent / "config"
@@ -226,21 +226,37 @@ def auth_user(
 
 
 @pytest.fixture(scope="function")
-def token(
+def token(token_manager: TokenManager) -> str:
+    """提供当前测试的有效 token。"""
+    return token_manager.get_valid_token()
+
+
+@pytest.fixture(scope="function")
+def token_manager(
     auth_service: AuthService,
     auth_user: dict[str, str],
-) -> str:
-    """为当前测试创建独立用户并登录取得 token。"""
-
+    api_client: APIClient,
+) -> TokenManager:
+    """注册当前用户，并提供测试级 token 管理器。"""
     register_response = auth_service.register(
         username=auth_user["username"],
         password=auth_user["password"],
     )
     assert register_response.status_code == 201, register_response.text
 
-    return auth_service.get_token(
+    def validate_token(token: str) -> bool:
+        orders = OrderService(api_client, token)
+        response = orders.list_orders(
+            page=1,
+            page_size=1,
+        )
+        return response.status_code == 200
+
+    return TokenManager(
+        auth_service,
         username=auth_user["username"],
         password=auth_user["password"],
+        validator=validate_token,
     )
 
 

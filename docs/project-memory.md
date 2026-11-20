@@ -4,7 +4,7 @@
 
 - 当前阶段：阶段 6（测试数据、鉴权、契约与混合场景）
 - 更新时间：2026-11-20
-- 状态：阶段六第二节课已完成并经学习者确认；第三节课进行中，准备实现 SQLite `DBClient`，清理无删除 API 的用户及其订单/会话并做数据库存在性校验
+- 状态：阶段六第三节课已完成并经学习者确认；第四节课进行中，准备实现 token 内存缓存、401 失效检测、重新登录刷新和 session 过期模拟
 
 ## 项目目标
 
@@ -302,14 +302,21 @@
   - 新增 2 条数据生命周期 API 测试，验证动态数据持久化和测试间查询隔离。
   - 现有鉴权、订单和 UI 用例兼容 Faker 动态密码，完整测试基线提升到 46 passed。
   - 代码提交为 `9806d1c 增加fixture测试数据生命周期管理`。
+- 阶段六第三节课已完成并经学习者确认：
+  - 创建 `core/db_client.py`，提供用户、session、订单存在性检查和按用户名清理能力。
+  - Settings 增加 `database_path`，支持 `AUTOMATION_DATABASE_PATH` 覆盖。
+  - conftest 增加 session 级 `db_client` fixture；`auth_user` teardown 自动清理用户、session 和订单。
+  - Compose 将 `app-data` 同时挂载给 automation，并注入容器数据库路径。
+  - 手工创建的第二用户也通过 `DBClient` 清理。
+  - 新增 2 条 DBClient 测试，API 26 passed、完整测试 48 passed，Docker 三通道通过。
+  - 代码提交为 `855bdd0 实现DBClient，处理后端没有删除API的测试用户及关联数据`。
 
 ## 待办
 
-- 创建 `core/db_client.py` 与 `core/__init__.py` 导出，提供用户存在性、订单存在性、按用户名清理用户及相关订单/session 的能力。
-- 在 Settings 增加 `database_path`，默认指向根项目 `app/data/app.db`，支持 `AUTOMATION_DATABASE_PATH` 覆盖。
-- 在 conftest 增加 session 级 `db_client` fixture，并让 `auth_user` teardown 自动清理用户及关联数据。
-- 在 Compose 中把 `app-data` 同时挂载给 automation，并注入容器数据库路径。
-- 新增数据库清理测试，并处理现有用户隔离测试中手工创建的第二用户清理。
+- 创建 `services/token_manager.py`，实现内存 token 缓存、有效性校验、强制刷新和登录次数统计。
+- 在 DBClient 增加删除 session 能力，用于模拟 token 失效/过期。
+- 在 conftest 增加 `token_manager` fixture，并让现有 `token` fixture 从管理器取得有效 token。
+- 新增 token 缓存与失效刷新测试，验证缓存命中不重复登录、session 删除后自动重新登录。
 
 ## 项目结构快照
 
@@ -365,9 +372,9 @@
 
 ## 下一步计划
 
-1. 完成阶段六第三课：实现 DBClient、数据库路径配置、用户/订单/session 清理和数据库存在性测试。
-2. 第三课通过后进入 token 获取缓存、失效检测与刷新策略。
-3. 随后建立 JSON Schema 响应契约测试。
+1. 完成阶段六第四课：实现 TokenManager、session 删除模拟过期和 fixtures 接线。
+2. 第四课通过后建立 JSON Schema 响应契约测试和契约失败诊断。
+3. 随后实现 mock/stub 隔离外部依赖。
 
 ## 重要变更
 
@@ -417,4 +424,5 @@
 - 阶段五总验收完成：本地、Docker、GitHub Actions、Pages、历史趋势与失败演练全部通过，主分支提交为 `69fe7d7`。
 - 阶段六第一节课完成：Faker 动态数据生成器与 3 条单元测试落地，提交为 `76db318`。
 - 阶段六第二节课完成：动态用户与订单 fixtures、API 创建和 teardown 删除/404 验证落地，提交为 `9806d1c`。
-- 阶段六第三节课开始：准备实现 SQLite `DBClient`，补齐测试用户及关联数据的直接清理和数据库级校验。
+- 阶段六第三节课完成：DBClient、数据库路径、用户/session/订单清理和 Compose 数据卷共享落地，提交为 `855bdd0`。
+- 阶段六第四节课开始：准备实现 token 缓存、失效检测与重新登录刷新。

@@ -63,6 +63,16 @@ class DBClient:
 
         return row is not None
 
+    def delete_session(self, token: str) -> bool:
+        """删除指定 session，用于模拟 token 失效。"""
+        with closing(self._connect()) as connection, connection:
+            cursor = connection.execute(
+                "DELETE FROM sessions WHERE token = ?",
+                (token,),
+            )
+
+        return cursor.rowcount > 0
+
     def delete_user_by_username(self, username: str) -> bool:
         """删除用户及其 session 和关联订单。"""
         with closing(self._connect()) as connection, connection:
