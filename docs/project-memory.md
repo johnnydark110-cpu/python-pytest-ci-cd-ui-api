@@ -4,7 +4,7 @@
 
 - 当前阶段：阶段 5（稳定性、并发与 CI/CD 接入）
 - 更新时间：2026-11-20
-- 状态：阶段五第二节课已完成并经学习者确认；第三节课进行中，准备引入 pytest-rerunfailures，并按异常类型只重试 `APITransportError`
+- 状态：阶段五第四节课已完成并经学习者确认；第五节课进行中，准备创建 GitHub Actions CI 工作流，但当前仓库尚无 Git remote，云端触发需先创建并推送远程仓库
 
 ## 项目目标
 
@@ -236,13 +236,41 @@
   - 5 条非关键 UI 测试通过 `-n 2` 双 worker 执行，1 条关键订单测试在独立串行通道执行。
   - 并行与串行通道均无遗漏、无重复，全量串行基线保持 41 passed。
   - 代码已提交为 `6d0a62c 注册serial marker...`，当前工作区干净。
+- 阶段五第三课重试策略已实现并通过学习者功能验证：
+  - 安装并锁定 `pytest-rerunfailures 16.7`。
+  - 3 个 API 测试模块增加 `reruns=2`、`reruns_delay=1`、`only_rerun=["APITransportError"]`。
+  - 已验证 `APITransportError` 重试、普通 `AssertionError` 不重试。
+  - 代码已提交为 `bd77bd1 添加失败重试标签，只对APITransportError 进行失败重试`。
+  - 故意失败的 `automation/tests/test_rerun_policy_demo.py` 曾误提交，现已删除并提交为 `33d89a5 删除临时重试验证用例`。
+- 阶段五第三课已完成并经学习者确认：
+  - Docker Desktop Linux Engine 与 WSL2 已正常运行。
+  - 完成 Docker Hub 网络/代理配置后，`docker run --rm hello-world` 已成功拉取并运行容器。
+  - 临时失败用例已删除，阶段五选择性重试策略正式完成。
+- 阶段五第四课已创建但首次容器回归未通过：
+  - 已创建 `.dockerignore`、多目标 `Dockerfile` 与 `docker-compose.yml`。
+  - app 与 automation 镜像已成功构建，容器内测试已实际启动。
+  - 首次自动化通道结果：6 failed、33 passed。
+  - `test_config_wiring.py` 未考虑 Compose 对 `AUTOMATION_BASE_URL` 与 `AUTOMATION_TIMEOUT_SECONDS` 的覆盖，仍硬编码 dev 的 `127.0.0.1:8000`/10 秒。
+  - 5 条 UI 测试导航 `http://app:8000/` 时出现 `ERR_SSL_PROTOCOL_ERROR`；同一轮 API 测试均通过，说明容器内 Python 到 app 的网络可用，问题集中在 Chromium 网络/HTTPS 升级行为。
+  - 配置接线测试已改为读取实际环境变量覆盖；配置专项恢复通过。
+  - 容器内使用 `http.client` 访问 `http://app:8000/openapi.json` 返回 200。
+  - Chromium 直接访问 `http://172.18.0.2:8000` 返回 200，页面标题为“订单管理系统”。
+  - Chromium 访问 `http://app:8000` 仍自动尝试 TLS；禁用 HttpsUpgrades/HttpsFirst flags 与 `--no-proxy-server` 均无效。
+  - 根因收敛为 Chromium 对内部主机名 `app` 的 HTTP 自动升级，采用 Compose 固定 IP 可规避。
+- 阶段五第四节课已完成并经学习者确认：
+  - Compose 使用独立 `testnet` 与固定 app IP `172.30.0.10`，automation 通过 `http://172.30.0.10:8000` 访问被测系统。
+  - Chromium 访问固定 IP 返回 200，单条 UI 测试和完整三通道容器测试均通过。
+  - 三段容器命令合计覆盖 41 项测试，Allure 结果已生成，当前结果文件数为 395。
+  - 配置接线测试已适配 Docker 环境变量覆盖。
+  - Docker、Compose 与容器化测试环境形成可复现闭环。
+  - Docker 文件与相关代码修改尚未提交。
 
 ## 待办
 
-- 使用 uv 安装并锁定 `pytest-rerunfailures` 开发依赖。
-- 创建临时策略验证用例，证明 `APITransportError` 会被重试、普通 `AssertionError` 不会重试。
-- 为 3 个 API 测试模块增加 `only_rerun=["APITransportError"]` 的 flaky 策略。
-- 验证正式 API 串行、双 worker 并行以及全量测试在无失败时计数不变。
+- 创建 `.github/workflows/ci.yml`，在 push、pull request 和手动触发时构建 Compose 环境并执行三通道测试。
+- CI 上传 HTML、Allure、截图和 Docker 日志 artifacts，并在 Job Summary 中输出报告链接和测试结果。
+- 配置可选 Slack Webhook 失败通知；未配置 secret 时不发送外部通知。
+- 创建 GitHub 远程仓库并推送当前提交，完成一次真实 Actions 触发验收。
 
 ## 项目结构快照
 
@@ -278,12 +306,25 @@
 - API 测试可以并行，UI 测试暂不放进 xdist 全量并行；后续需要单独设计 UI 并行/串行策略。
 - UI 失败 hook 只能附加截图，不能改变原测试结果；截图异常必须被捕获并单独记录。
 - pytest-rerunfailures 只能作用于测试失败；fixture setup/teardown 错误不能被当作普通测试调用失败来重试，外部环境是否可用仍需 CI 健康检查前置保障。
+- `automation/tests/test_rerun_policy_demo.py` 已删除，不再是测试阻断项。
+- Docker Desktop 4.99.0、CLI 29.9.3、Compose v5.7.0 已就绪；Docker Hub 镜像拉取和容器运行已通过 `hello-world` 验证。
+- Codex 沙箱进程仍无权访问 Docker Desktop 命名管道，因此 Docker 构建与 Compose 命令需在学习者 PowerShell 中执行。
+- 根目录存在单独的 `pyproject.toml`/`uv.lock`，但自动化测试镜像必须以 `automation/pyproject.toml` 与 `automation/uv.lock` 为依赖来源。
+- Playwright UI 容器必须以无头模式运行，并安装 Chromium 及系统依赖；容器内不可访问宿主机的 `127.0.0.1:8000`。
+- Docker 容器中的 `AUTOMATION_BASE_URL=http://app:8000` 与 `AUTOMATION_TIMEOUT_SECONDS=15` 是合法覆盖，配置接线测试必须考虑环境变量，而不是始终断言 YAML 默认值。
+- Compose 主机名方案中 Chromium 对 `http://app:8000` 报 `ERR_SSL_PROTOCOL_ERROR`；已改用静态 IP `http://172.30.0.10:8000` 并验收通过，当前不再使用 `app` 主机名作为测试 base URL。
+- 根目录执行 `ruff check .` 会把 FastAPI 路由中的 `Depends(...)` 默认参数判定为 B008；这是项目应用层的 FastAPI 惯用写法。`ruff check app --ignore B008` 已通过，后续可在根 Ruff 配置对 `app/backend/**/*.py` 做 B008 per-file ignore，或继续只检查 `automation/`。
+- `docker compose ps` 为空表示当前未启动服务，不等于 Compose 配置失败；执行测试前需要先启动 app。
+- 根目录另有 `pyproject.toml`/`uv.lock` uv 工程，但 `automation/` 才是自动化框架的独立 uv 项目；Docker 设计必须以 `automation/pyproject.toml` 与 `automation/uv.lock` 为测试镜像依赖来源，避免误用根项目依赖。
+- 当前 git 仓库没有配置任何 remote，也没有 `.github/` 工作流或 GitHub CLI `gh`；GitHub Actions 无法在本地仓库直接触发。
+- 根目录 Ruff 的 B008 per-file ignore 当前被放在 `automation/pyproject.toml`，不会可靠覆盖根目录 app 路径；CI 若检查全仓 Ruff，需要把配置移到根 `pyproject.toml`，否则先使用 `ruff check automation`。
 
 ## 下一步计划
 
-1. 完成阶段五第三课：安装 pytest-rerunfailures，验证只重试 `APITransportError`，普通断言失败不重试。
-2. 重试策略通过后进入 Docker 与 docker-compose 环境复现课程。
-3. 最后编排 CI 并行、串行、报告归档与失败通知。
+1. 完成阶段五第五课：创建 GitHub Actions CI 工作流并验证 YAML/Compose 引用。
+2. 修正根目录 Ruff 配置，使 CI 可选择执行全仓静态检查。
+3. 创建 GitHub 远程仓库、提交 Docker/CI 变更并完成真实 Actions 触发验收。
+4. CI 通过后进入阶段五总验收。
 
 ## 重要变更
 
@@ -327,4 +368,6 @@
 - 阶段四总验收完成：学习者确认 UI 自动化稳定性、页面对象、失败截图和浏览器资源管理；代码提交为 `a245ef2`。
 - 阶段五第一节课完成：pytest-xdist 3.8.0 已锁定，22 条 API 测试通过双 worker 并行验收，提交为 `34c9fc8`。
 - 阶段五第二节课完成：注册 `serial` marker，关键订单 UI 串行、其余 UI 双 worker 并行，浏览器慢动作关闭，提交为 `6d0a62c`。
-- 阶段五第三节课开始：准备用 pytest-rerunfailures 只重试网络传输异常，禁止普通断言失败重试。
+- 阶段五第三节课完成：pytest-rerunfailures 仅重试 `APITransportError`；临时用例清理提交 `33d89a5`；Docker Engine、WSL2 与 `hello-world` 验证通过。
+- 阶段五第四节课完成：Compose 静态网络、固定 IP、三通道 41 项容器测试和 Allure 产物均通过，学习者确认 Docker 环境复现完成。
+- 阶段五第五节课开始：准备创建 GitHub Actions 工作流，并将测试、报告归档和失败通知串成 CI。

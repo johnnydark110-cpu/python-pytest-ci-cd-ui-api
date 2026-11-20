@@ -1,0 +1,87 @@
+name: python-pytest-ci-cd-ui-api
+
+services:
+  app:
+    build:
+      context: .
+      target: app
+    image: python-pytest-ci-cd-ui-api-app:local
+    init: true
+    ports:
+      - "18000:8000"
+    volumes:
+      - app-data:/workspace/app/data
+    networks:
+      testnet:
+        ipv4_address: 172.30.0.10
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen(
+          'http://127.0.0.1:8000/openapi.json',
+          timeout=2
+          )
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 5s
+    restart: unless-stopped
+
+  automation:
+    build:
+      context: .
+      target: automation
+    image: python-pytest-ci-cd-ui-api-automation:local
+    init: true
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      AUTOMATION_ENVIRONMENT: dev
+      AUTOMATION_BASE_URL: http://172.30.0.10:8000
+      AUTOMATION_TIMEOUT_SECONDS: "15"
+    volumes:
+      - ./automation/reports:/workspace/reports
+      - ./automation/screenshots:/workspace/screenshots
+    shm_size: "1gb"
+    networks:
+      - testnet
+    command:
+      - /bin/sh
+      - -c
+      - |
+        set -eu
+
+        uv run pytest \
+          -m "regression and not serial" \
+          --env=dev \
+          -n 2 \
+          -q \
+          --alluredir=reports/docker-allure \
+          --clean-alluredir
+
+        uv run pytest \
+          -m serial \
+          --env=dev \
+          -q \
+          --alluredir=reports/docker-allure
+
+        uv run pytest \
+          -m "smoke and not regression" \
+          --env=dev \
+          -q \
+          --alluredir=reports/docker-allure
+    restart: "no"
+
+volumes:
+  app-data:
+
+networks:
+  testnet:
+    ipam:
+      config:
+        - subnet: 172.30.0.0/24

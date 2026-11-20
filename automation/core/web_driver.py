@@ -48,7 +48,8 @@ class BrowserManager:
 
         try:
             browser = playwright.chromium.launch(
-                headless=self.headless, slow_mo=self.slow_mo
+                headless=self.headless,
+                slow_mo=self.slow_mo,
             )
         except Exception:
             playwright.stop()
