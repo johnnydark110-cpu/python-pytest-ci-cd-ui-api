@@ -93,3 +93,10 @@ macOS / Linux：
 ## 学习路径
 
 详细的七阶段学习路线见 [docs/learning-path.md](docs/learning-path.md)，进度与记忆见 [docs/project-memory.md](docs/project-memory.md)。
+
+## 运行与协作
+
+- [自动化测试运行手册](docs/runbook.md)
+- [自动化测试协作规范](docs/collaboration.md)
+- [学习路径](docs/learning-path.md)
+- [项目记忆](docs/project-memory.md)

@@ -4,7 +4,7 @@
 
 - 当前阶段：阶段 7（线上化加固与运营）
 - 更新时间：2026-11-23
-- 状态：阶段七第五节课已完成并经学习者确认，失败分类、known_flaky 门禁和重试汇总已通过；准备进入第六节课，建立失败聚类与跨运行趋势
+- 状态：阶段七第七节课文档已完成写入，README 导航已补充，等待学习者预览验收
 
 ## 项目目标
 
@@ -382,12 +382,27 @@
   - Allure 失败附件增加分类，主进程输出 `flaky-summary.json`，Docker 三通道分别输出 parallel/serial/smoke 汇总。
   - 新增 9 条 flaky 治理测试，完整本地基线提升到 88 passed；Docker 三通道 85 + 2 + 1 合计 88 项通过。
   - 代码已提交为 `d18953b 建立失败分类、known_flaky登记门禁和重试结果汇总...`；工作区干净，本地 `master` 比 `origin/master` 领先 1 个提交。
+- 阶段七第六节课已完成并经学习者确认：
+  - 创建 `automation/report_analytics.py`，优先合并 parallel、serial、smoke 三个 flaky 报告，重复 nodeid 取最严重状态。
+  - 按失败类别、测试模块和 known_flaky issue 生成聚类，并支持相同 run_id 替换、不同 run_id 追加。
+  - 输出 `dashboard.json`、`history.json` 和 `summary.md`，维护最近 30 次运行趋势。
+  - Docker 三通道使用独立 flaky JSON，并在启动前清理旧汇总，避免旧数据污染。
+  - GitHub Actions 增加分析历史缓存、失败聚类生成、历史保存和 Job Summary 追加。
+  - 修复 `load_report_file()` 中 `return payload` 缩进错误和 Ruff TRY004 类型异常问题。
+  - 新增 5 条分析测试，完整本地基线提升到 93 passed；Docker 三通道 90 + 2 + 1 合计 93 项通过。
+  - 代码已提交为 `aa1e833 聚合parallel、serial、smoke三个flaky汇总文件...`；工作区干净，本地 `master` 比 `origin/master` 领先 1 个提交。
+- 阶段七第七节课文档已直接写入：
+  - `docs/runbook.md` 已写入完整运行手册，当前约 11.9 KB，覆盖安全边界、命令、Docker、CI、报告、trace、限流熔断、失败分诊、事故处理和检查清单。
+  - `docs/collaboration.md` 已写入完整协作规范，当前约 5.4 KB，覆盖角色、PR、known_flaky、报告、secret、生产协作和完成定义。
+  - 两个文件的标题层级和代码块围栏已检查，`git diff --check` 无格式错误。
+  - `README.md` 已增加“运行与协作”导航，链接运行手册、协作规范、学习路径和项目记忆。
 
 ## 待办
 
-- 完成阶段七第六节课：聚合三个测试通道，按失败类别、模块和 issue 聚类，并维护跨运行趋势历史。
-- 后续沉淀运行手册与协作规范。
-- 保持未解决 flaky 用例具备 issue、owner、过期时间，并在到期后阻断收集。
+- 在 VS Code 中预览并验收两个 Markdown 文档。
+- 验收 README 中的文档导航。
+- 将当前领先远程的第六课提交推送到 `origin/master`，并验证 Actions 分析摘要和历史缓存。
+- 运行手册完成后执行阶段七总验收，不直接进入结束状态。
 
 ## 项目结构快照
 
@@ -442,9 +457,9 @@
 
 ## 下一步计划
 
-1. 将 parallel、serial、smoke 三个 flaky 汇总合并为单次运行结果。
-2. 按类别、模块和 known_flaky issue 生成失败聚类，并维护历史趋势。
-3. 在 GitHub Actions 中缓存历史并输出可读摘要，再进入运行手册。
+1. 预览并修订 `docs/runbook.md` 与 `docs/collaboration.md`。
+2. 验收 README 的文档导航。
+3. 提交文档并完成阶段七总验收。
 
 ## 重要变更
 
@@ -505,4 +520,5 @@
 - 阶段七第三节课完成：增加每次测试唯一的 trace_id、API/浏览器流量染色、日志与报告关联，提交为 `82a44d1`。
 - 阶段七第四节课完成：增加客户端最小请求间隔、三态熔断器和重试流量保护，提交为 `a72c004` 并推送到远程。
 - 阶段七第五节课完成：增加失败分类、known_flaky 元数据门禁、重试汇总和分通道 flaky JSON，提交为 `d18953b`。
-- 阶段七第六节课待开始：聚合测试通道，建立失败聚类和跨运行趋势历史。
+- 阶段七第六节课完成：聚合测试通道、失败分类聚类、跨运行趋势、Actions 缓存与 Markdown 摘要，提交为 `aa1e833`。
+- 阶段七第七节课文档已完成：运行手册、协作规范和 README 导航均已落地，等待最终验收。
