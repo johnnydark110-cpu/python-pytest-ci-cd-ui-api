@@ -31,6 +31,7 @@ class Settings(BaseSettings):
         le=120,
     )
     verify_ssl: bool = True
+    read_only: bool
     database_path: Path = DEFAULT_DATABASE_PATH
 
     @classmethod

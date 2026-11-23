@@ -11,7 +11,7 @@ import allure
 import httpx
 
 from .allure_utils import attach_redacted_json
-from .exceptions import APITransportError
+from .exceptions import APITransportError, ReadOnlyViolationError
 from .logger import format_log_data, get_logger
 from .request_context import record_request_exchange
 
@@ -19,6 +19,13 @@ logger = get_logger(__name__)
 
 DEFAULT_BASE_URL = "http://127.0.0.1:8000"
 DEFAULT_TIMEOUT_SECONDS = 10.0
+READ_ONLY_METHODS = frozenset(
+    {
+        "GET",
+        "HEAD",
+        "OPTIONS",
+    }
+)
 
 
 class APIClient:
@@ -30,11 +37,13 @@ class APIClient:
         timeout: float | httpx.Timeout = DEFAULT_TIMEOUT_SECONDS,
         default_headers: Mapping[str, str] | None = None,
         verify_ssl: bool = True,
+        read_only: bool = True,
         transport: httpx.BaseTransport | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self.verify_ssl = verify_ssl
+        self.read_only = read_only
 
         headers = {"Accept": "application/json"}
         if default_headers:
@@ -61,6 +70,18 @@ class APIClient:
         normalized_path = f"/{path.lstrip('/')}"
         method = method.upper()
         request_url = f"{self.base_url}{normalized_path}"
+
+        if self.read_only and method not in READ_ONLY_METHODS:
+            logger.warning(
+                "只读模式阻止写请求: %s %s",
+                method,
+                request_url,
+            )
+            raise ReadOnlyViolationError(
+                method=method,
+                url=request_url,
+            )
+
         started_at = perf_counter()
 
         effective_headers = dict(self._client.headers)

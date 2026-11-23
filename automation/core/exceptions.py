@@ -28,6 +28,22 @@ class APIClientError(AutomationError):
         self.url = url
 
 
+class ReadOnlyViolationError(APIClientError):
+    """只读模式阻止了可能修改数据的 HTTP 请求。"""
+
+    def __init__(
+        self,
+        *,
+        method: str,
+        url: str,
+    ) -> None:
+        super().__init__(
+            f"只读模式禁止写请求: {method} {url}",
+            method=method,
+            url=url,
+        )
+
+
 class APITransportError(APIClientError):
     """请求未能获得 HTTP 响应时抛出的异常。"""
 

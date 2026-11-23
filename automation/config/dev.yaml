@@ -2,3 +2,4 @@ environment: dev
 base_url: http://127.0.0.1:8000
 timeout_seconds: 10
 verify_ssl: true
+read_only: false

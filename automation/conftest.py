@@ -252,6 +252,7 @@ def api_client(base_url: str, settings: Settings) -> Iterator[APIClient]:
         base_url=base_url,
         timeout=settings.timeout_seconds,
         verify_ssl=settings.verify_ssl,
+        read_only=settings.read_only,
     ) as client:
         yield client
 

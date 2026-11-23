@@ -8,6 +8,7 @@ from .exceptions import (
     APIResponseError,
     APITransportError,
     AutomationError,
+    ReadOnlyViolationError,
 )
 from .logger import configure_logging, get_logger, redact_data
 from .request_context import (
@@ -31,6 +32,7 @@ __all__ = [
     "AutomationError",
     "BrowserManager",
     "DBClient",
+    "ReadOnlyViolationError",
     "attach_redacted_json",
     "attach_screenshot",
     "configure_logging",

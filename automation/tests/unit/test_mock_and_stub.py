@@ -35,6 +35,7 @@ def test_api_client_uses_mock_transport() -> None:
 
     with APIClient(
         base_url="https://mock.local",
+        read_only=False,
         transport=transport,
     ) as client:
         response = client.post(
