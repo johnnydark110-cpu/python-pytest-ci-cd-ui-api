@@ -16,6 +16,10 @@ from .request_context import (
     start_request_history,
     stop_request_history,
 )
+from .schema_validator import (
+    load_json_schema,
+    validate_json_contract,
+)
 from .web_driver import BrowserManager
 from .yaml_loader import load_yaml_test_cases
 
@@ -32,9 +36,11 @@ __all__ = [
     "configure_logging",
     "get_logger",
     "get_request_history",
+    "load_json_schema",
     "load_yaml_test_cases",
     "record_request_exchange",
     "redact_data",
     "start_request_history",
     "stop_request_history",
+    "validate_json_contract",
 ]

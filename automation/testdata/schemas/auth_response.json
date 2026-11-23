@@ -1,0 +1,31 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://automation.local/schemas/auth_response.json",
+    "title": "AuthResponse",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "token",
+        "username",
+        "role"
+    ],
+    "properties": {
+        "token": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+        },
+        "username": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 32
+        },
+        "role": {
+            "type": "string",
+            "enum": [
+                "user",
+                "admin"
+            ]
+        }
+    }
+}

@@ -1,0 +1,43 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://automation.local/schemas/order.json",
+    "title": "Order",
+    "type": "object",
+    "additionalProperties": false,
+    "required": [
+        "id",
+        "title",
+        "amount",
+        "status",
+        "created_at"
+    ],
+    "properties": {
+        "id": {
+            "type": "integer",
+            "minimum": 1
+        },
+        "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+        },
+        "amount": {
+            "type": "number",
+            "exclusiveMinimum": 0
+        },
+        "status": {
+            "type": "string",
+            "enum": [
+                "pending",
+                "paid",
+                "shipped",
+                "done",
+                "canceled"
+            ]
+        },
+        "created_at": {
+            "type": "string",
+            "minLength": 1
+        }
+    }
+}

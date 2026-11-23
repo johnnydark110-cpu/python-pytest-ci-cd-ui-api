@@ -4,7 +4,7 @@
 
 - 当前阶段：阶段 6（测试数据、鉴权、契约与混合场景）
 - 更新时间：2026-11-20
-- 状态：阶段六第三节课已完成并经学习者确认；第四节课进行中，准备实现 token 内存缓存、401 失效检测、重新登录刷新和 session 过期模拟
+- 状态：阶段六第五节课已完成并经学习者确认；第六节课进行中，准备用 httpx.MockTransport 和测试替身隔离真实网络，并学习 mock/stub 的调用契约
 
 ## 项目目标
 
@@ -310,13 +310,27 @@
   - 手工创建的第二用户也通过 `DBClient` 清理。
   - 新增 2 条 DBClient 测试，API 26 passed、完整测试 48 passed，Docker 三通道通过。
   - 代码提交为 `855bdd0 实现DBClient，处理后端没有删除API的测试用户及关联数据`。
+- 阶段六第四节课已完成并经学习者确认：
+  - 创建 `services/token_manager.py`，实现单个测试用户的内存 token 缓存、有效性校验和刷新。
+  - DBClient 增加 `delete_session()`，通过删除 session 模拟 token 失效。
+  - conftest 增加 `token_manager` fixture，现有 `token: str` fixture 从管理器取得有效 token。
+  - 新增 2 条 token 生命周期测试，验证缓存命中不重复登录、session 删除后自动重新登录。
+  - API 28 passed、完整测试 50 passed，Docker 三通道通过。
+  - 代码提交为 `e888ec6 token获取，缓存，失效检测与刷新`。
+- 阶段六第五节课已完成并经学习者确认：
+  - 安装并锁定 `jsonschema 4.26.0` 开发依赖。
+  - 创建 `testdata/schemas/auth_response.json`、`order.json`、`order_list.json`，使用 Draft 2020-12 并禁止额外字段。
+  - 创建 `core/schema_validator.py`，支持 schema 加载、合法性检查和聚合字段路径错误。
+  - 新增 4 条 API 契约测试，验证鉴权、订单、订单列表真实响应，并证明字段类型变化会被捕获。
+  - API 32 passed、完整测试 54 passed，Docker 三通道通过。
+  - 当前 schema、validator 和契约测试修改尚未提交。
 
 ## 待办
 
-- 创建 `services/token_manager.py`，实现内存 token 缓存、有效性校验、强制刷新和登录次数统计。
-- 在 DBClient 增加删除 session 能力，用于模拟 token 失效/过期。
-- 在 conftest 增加 `token_manager` fixture，并让现有 `token` fixture 从管理器取得有效 token。
-- 新增 token 缓存与失效刷新测试，验证缓存命中不重复登录、session 删除后自动重新登录。
+- 为 APIClient 增加可选 `transport` 注入点，默认行为保持不变。
+- 使用 `httpx.MockTransport` 编写不依赖真实服务的 HTTP 单元测试，验证 URL、方法、请求头和 JSON body。
+- 使用 StubAuthService 和 unittest.mock 验证 TokenManager 缓存、失效刷新和调用参数。
+- 创建 `tests/unit/` 单元测试目录并确保这些测试可在被测系统未启动时运行。
 
 ## 项目结构快照
 
@@ -372,9 +386,9 @@
 
 ## 下一步计划
 
-1. 完成阶段六第四课：实现 TokenManager、session 删除模拟过期和 fixtures 接线。
-2. 第四课通过后建立 JSON Schema 响应契约测试和契约失败诊断。
-3. 随后实现 mock/stub 隔离外部依赖。
+1. 完成阶段六第六课：实现 mock/stub 测试并验证无需真实服务即可运行。
+2. 第六课通过后建立 UI 与 API 混合用户旅程。
+3. 完成阶段六总验收并提交。
 
 ## 重要变更
 
@@ -425,4 +439,6 @@
 - 阶段六第一节课完成：Faker 动态数据生成器与 3 条单元测试落地，提交为 `76db318`。
 - 阶段六第二节课完成：动态用户与订单 fixtures、API 创建和 teardown 删除/404 验证落地，提交为 `9806d1c`。
 - 阶段六第三节课完成：DBClient、数据库路径、用户/session/订单清理和 Compose 数据卷共享落地，提交为 `855bdd0`。
-- 阶段六第四节课开始：准备实现 token 缓存、失效检测与重新登录刷新。
+- 阶段六第四节课完成：TokenManager 缓存、失效检测和重新登录刷新落地，提交为 `e888ec6`。
+- 阶段六第五节课完成：JSON Schema 响应契约工具、三份 schema 和 4 条契约测试落地；当前尚未提交。
+- 阶段六第六节课开始：准备用 MockTransport 与 Stub/Mock 隔离网络和鉴权依赖。
