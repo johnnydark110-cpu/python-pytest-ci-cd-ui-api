@@ -11,9 +11,14 @@ import allure
 import httpx
 
 from .allure_utils import attach_redacted_json
-from .exceptions import APITransportError, ReadOnlyViolationError
+from .exceptions import (
+    APITransportError,
+    CircuitOpenError,
+    ReadOnlyViolationError,
+)
 from .logger import format_log_data, get_logger
 from .request_context import record_request_exchange
+from .request_guard import CircuitBreaker, RequestRateLimiter
 from .trace_context import get_trace_context
 
 logger = get_logger(__name__)
@@ -39,6 +44,9 @@ class APIClient:
         default_headers: Mapping[str, str] | None = None,
         verify_ssl: bool = True,
         read_only: bool = True,
+        min_request_interval_seconds: float = 0.0,
+        circuit_failure_threshold: int = 3,
+        circuit_recovery_seconds: float = 30.0,
         transport: httpx.BaseTransport | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
@@ -56,6 +64,13 @@ class APIClient:
             headers=headers,
             verify=verify_ssl,
             transport=transport,
+        )
+        self.rate_limiter = RequestRateLimiter(
+            min_request_interval_seconds,
+        )
+        self.circuit_breaker = CircuitBreaker(
+            circuit_failure_threshold,
+            circuit_recovery_seconds,
         )
 
     def request(
@@ -82,6 +97,16 @@ class APIClient:
                 method=method,
                 url=request_url,
             )
+        try:
+            self.circuit_breaker.before_request(
+                method=method,
+                url=request_url,
+            )
+        except CircuitOpenError as exc:
+            logger.warning("请求被熔断器阻止: %s", exc)
+            raise
+
+        self.rate_limiter.wait()
 
         started_at = perf_counter()
 
@@ -132,7 +157,10 @@ class APIClient:
                     normalized_path,
                     **request_options,
                 )
+                self.circuit_breaker.record_success()
             except httpx.HTTPError as exc:
+                self.circuit_breaker.record_failure()
+
                 logger.exception(
                     "API request failed %s %s",
                     method,

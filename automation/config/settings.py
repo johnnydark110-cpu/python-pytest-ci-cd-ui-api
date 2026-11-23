@@ -37,6 +37,21 @@ class Settings(BaseSettings):
         min_length=1,
         max_length=64,
     )
+    min_request_interval_seconds: float = Field(
+        default=0.0,
+        ge=0,
+        le=60,
+    )
+    circuit_failure_threshold: int = Field(
+        default=3,
+        ge=1,
+        le=100,
+    )
+    circuit_recovery_seconds: float = Field(
+        default=30.0,
+        gt=0,
+        le=600,
+    )
     database_path: Path = DEFAULT_DATABASE_PATH
 
     @classmethod

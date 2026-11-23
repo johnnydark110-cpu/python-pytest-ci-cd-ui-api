@@ -8,6 +8,7 @@ from .exceptions import (
     APIResponseError,
     APITransportError,
     AutomationError,
+    CircuitOpenError,
     ReadOnlyViolationError,
 )
 from .logger import configure_logging, get_logger, redact_data
@@ -16,6 +17,10 @@ from .request_context import (
     record_request_exchange,
     start_request_history,
     stop_request_history,
+)
+from .request_guard import (
+    CircuitBreaker,
+    RequestRateLimiter,
 )
 from .schema_validator import (
     load_json_schema,
@@ -42,8 +47,11 @@ __all__ = [
     "APITransportError",
     "AutomationError",
     "BrowserManager",
+    "CircuitBreaker",
+    "CircuitOpenError",
     "DBClient",
     "ReadOnlyViolationError",
+    "RequestRateLimiter",
     "TraceContext",
     "attach_redacted_json",
     "attach_screenshot",

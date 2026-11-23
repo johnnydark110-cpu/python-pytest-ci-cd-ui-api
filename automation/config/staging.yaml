@@ -4,3 +4,6 @@ timeout_seconds: 20
 verify_ssl: true
 read_only: false
 traffic_tag: automation.staging
+min_request_interval_seconds: 0.2
+circuit_failure_threshold: 3
+circuit_recovery_seconds: 30

@@ -44,6 +44,32 @@ class ReadOnlyViolationError(APIClientError):
         )
 
 
+class CircuitOpenError(APIClientError):
+    """熔断器阻止了本次请求。"""
+
+    def __init__(
+        self,
+        *,
+        method: str,
+        url: str,
+        retry_after_seconds: float,
+    ) -> None:
+        if retry_after_seconds > 0:
+            message = (
+                f"熔断器已打开，约 {retry_after_seconds:.2f} 秒后允许探测: "
+                f"{method} {url}"
+            )
+        else:
+            message = f"熔断器处于半开探测状态: {method} {url}"
+
+        super().__init__(
+            message,
+            method=method,
+            url=url,
+        )
+        self.retry_after_seconds = retry_after_seconds
+
+
 class APITransportError(APIClientError):
     """请求未能获得 HTTP 响应时抛出的异常。"""
 
