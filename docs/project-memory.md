@@ -3,8 +3,8 @@
 ## 当前状态
 
 - 当前阶段：阶段 6（测试数据、鉴权、契约与混合场景）
-- 更新时间：2026-11-20
-- 状态：阶段六第五节课已完成并经学习者确认；第六节课进行中，准备用 httpx.MockTransport 和测试替身隔离真实网络，并学习 mock/stub 的调用契约
+- 更新时间：2026-11-23
+- 状态：阶段六第六节课已完成并经学习者确认，代码已提交；准备进入阶段六第七节课，建立“UI 造数 + API 校验 + UI 验证”的混合用户旅程
 
 ## 项目目标
 
@@ -148,7 +148,6 @@
   - 提交为 `a67c41d 添加setting对象Session范围初始化的fixture，修改APIClient在构造方法中添加setting配置`。
   - 学习者补齐 `api_client` fixture，把 `settings.timeout_seconds` 与 `settings.verify_ssl` 显式传给 `APIClient`。
   - dev 与 staging 配置接线专项均通过，学习者确认第三课完成。
-  - 当前工作区中 `automation/conftest.py` 的第三课修正尚未提交；最近提交仍为 `a67c41d`。
 - 阶段三第四节课已完成并经学习者确认：
   - 已创建 `automation/testdata/orders.yaml`，包含 6 组订单创建数据。
   - 已创建 `automation/core/yaml_loader.py` 和 `automation/tests/api/test_order_data_driven.py`。
@@ -156,7 +155,6 @@
   - 加载器类型注解已修正为 `list[dict[str, Any]]`。
   - 数据驱动测试已增加模块级 `regression` 标记。
   - 学习者确认数据驱动专项 6 passed、regression 34 passed、1 deselected、全套 35 passed。
-  - 当前新增与修改文件尚未提交；最近提交仍为 `a67c41d`。
 - 阶段三第五节课已完成并经学习者确认：
   - 安装并锁定 `allure-pytest 2.16.2` 开发依赖。
   - 安装 Allure Commandline 2.46.2 与 Temurin JRE 21，并解决终端 PATH 与 VS Code 继承旧环境的问题。
@@ -190,13 +188,12 @@
   - `BrowserContext` 使用当前环境的 `base_url` 与 `verify_ssl`，每条测试拥有独立 Cookie 和 localStorage。
   - 创建 `tests/ui/test_browser_wiring.py`，验证应用页加载、`data-testid` 定位和不同 context 的存储隔离。
   - 重复运行浏览器接线测试通过，测试结束后 Chromium 进程正常释放。
-  - 当前 `automation/conftest.py`、`core/__init__.py`、`core/web_driver.py` 与 `tests/ui/` 尚未提交；Playwright 依赖已在 `7bcc61d 添加playwright` 中提交。
 - 阶段四第三节课已完成并经学习者确认：
   - 创建 `pages/base_page.py` 与 `pages/__init__.py`，封装相对路径导航、`data-testid` 定位、显式等待、点击、输入、文本读取和截图。
   - 使用 Playwright `expect()` 做自动重试等待，没有引入固定 `sleep`。
   - 创建 `tests/ui/test_base_page_wiring.py`，验证导航、输入、模式切换、文本读取和全页截图。
   - 已生成 `automation/screenshots/base-page-wiring.png`，截图约 16 KB，目录由 `.gitignore` 排除。
-  - `app/frontend/index.html` 当前未提交修改补充了 `auth-title` 的 `data-testid`，页面对象可直接稳定定位登录/注册标题。
+  - `app/frontend/index.html` 已补充 `auth-title` 的 `data-testid`，页面对象可直接稳定定位登录/注册标题。
 - 阶段四第四节课已完成并经学习者确认：
   - 创建 `pages/login_page.py`，封装登录页打开、输入账号密码、提交以及成功/失败状态等待。
   - `conftest.py` 提供全局 function 级 `login_page` fixture。
@@ -207,28 +204,25 @@
   - `conftest.py` 提供全局 function 级 `order_page` fixture。
   - 创建 `tests/ui/test_order_ui.py`，完成“登录 → 新增 → 搜索 → 修改 → 删除”的完整 UI 闭环。
   - 删除流程自动接受原生 `confirm()` 对话框，编辑前等待表单回填原订单值。
-  - 当前浏览器以 `headless=False`、`slow_mo=1000` 运行，便于观察 UI 操作；正式回归前需要切回无头模式以提高速度。
 - 阶段四第六节课已完成并经学习者确认：
   - `core/allure_utils.py` 增加 `attach_screenshot()`，把 PNG 文件附加到 Allure。
   - `pytest_runtest_makereport` 在失败时识别可用的 `page`，自动截取全页截图并附加。
   - 截图逻辑使用独立异常隔离，截图自身失败时记录诊断附件，不覆盖原始测试失败。
   - 临时失败用例已验证 Allure 中出现“失败截图（call）”，截图约 19 KB，随后已删除。
   - `reports/allure-ui-failure` 中已生成失败报告结果文件。
-  - `ruff check automation` 通过；阶段四代码仍未提交。
+  - `ruff check automation` 通过。
 - 阶段四总验收已完成并经学习者确认：
   - 6 条正式 UI 测试连续运行通过，登录成功/失败与订单新增、搜索、修改、删除闭环均稳定。
   - BasePage、LoginPage、OrderPage 集中管理业务定位，登录和订单业务用例不直接编写元素 locator。
   - 失败自动截图文件与 Allure 失败报告均验证成功。
   - 完整测试基线为 41 passed，浏览器 context 隔离和正常释放已验证。
   - 阶段四全部代码已提交为 `a245ef2 完成基于playwright的UI基础自动化测试`，当前工作区干净。
-  - 浏览器正式配置仍为 `headless=False`、`slow_mo=1000`，阶段五 CI 前必须切换为无头模式。
 - 阶段五第一节课已完成并经学习者确认：
   - 安装并锁定 `pytest-xdist 3.8.0` 开发依赖。
   - 22 条 API 测试串行基线与 `-n 2` 并行执行均通过。
   - 并行 API 测试连续执行稳定，随机用户和数据隔离没有产生 `database is locked`。
   - 已生成 `reports/allure-api-parallel`，包含完整并行 API 结果。
   - 代码已提交为 `34c9fc8 添加pytest-xdist实现api并发执行`，当前工作区干净。
-  - 浏览器已切为 `headless=True`，但仍保留 `slow_mo=1000`。
 - 阶段五第二节课已完成并经学习者确认：
   - `pytest.ini` 注册 `serial` marker，明确关键 UI 测试必须进入无 xdist 串行通道。
   - 订单 CRUD UI 用例增加 `serial` 标记。
@@ -263,7 +257,6 @@
   - 三段容器命令合计覆盖 41 项测试，Allure 结果已生成，当前结果文件数为 395。
   - 配置接线测试已适配 Docker 环境变量覆盖。
   - Docker、Compose 与容器化测试环境形成可复现闭环。
-  - Docker 文件与相关代码修改尚未提交。
 - 阶段五第五节课已创建并触发首次 CI：
   - 创建并推送 `.github/workflows/ci.yml`。
   - Docker 环境提交为 `91afe03 添加Docker容器化测试环境`。
@@ -323,14 +316,21 @@
   - 创建 `core/schema_validator.py`，支持 schema 加载、合法性检查和聚合字段路径错误。
   - 新增 4 条 API 契约测试，验证鉴权、订单、订单列表真实响应，并证明字段类型变化会被捕获。
   - API 32 passed、完整测试 54 passed，Docker 三通道通过。
-  - 当前 schema、validator 和契约测试修改尚未提交。
+  - 代码已提交为 `01bfaa1 完成jsonschema响应契约测试`。
+- 阶段六第六节课已完成并经学习者确认：
+  - `APIClient` 增加可选 `transport: httpx.BaseTransport | None` 注入点，默认值为 `None`，真实请求行为不变。
+  - 创建 `tests/unit/__init__.py` 与 `tests/unit/test_mock_and_stub.py`。
+  - 使用 `httpx.MockTransport` 在完全不访问网络时验证请求方法、URL、Authorization 请求头和 JSON body。
+  - 使用 `StubAuthService` 验证 TokenManager 缓存、失效刷新和鉴权调用参数。
+  - 使用 `unittest.mock.Mock(spec=AuthService)` 验证 `get_token()` 调用次数和关键字参数。
+  - 单元测试专项 3 passed，完整测试基线 57 passed。
+  - 代码已提交为 `41f8f76 使用mock/stub隔离外部依赖`；提交后 `master` 与 `origin/master` 同步，工作区干净。
 
 ## 待办
 
-- 为 APIClient 增加可选 `transport` 注入点，默认行为保持不变。
-- 使用 `httpx.MockTransport` 编写不依赖真实服务的 HTTP 单元测试，验证 URL、方法、请求头和 JSON body。
-- 使用 StubAuthService 和 unittest.mock 验证 TokenManager 缓存、失效刷新和调用参数。
-- 创建 `tests/unit/` 单元测试目录并确保这些测试可在被测系统未启动时运行。
+- 完成阶段六第七节课：创建 `tests/e2e/test_user_journey.py`，打通 UI 造数、API 校验和 UI 验证。
+- 完成阶段六总验收：E2E 稳定通过、用例结束后无残留数据、JSON Schema 可捕获字段变化、token 失效可自动刷新。
+- 阶段六总验收通过后提交全部成果，再进入阶段七。
 
 ## 项目结构快照
 
@@ -362,8 +362,8 @@
 - 浏览器必须按“session 级 browser、function 级 context/page”管理：复用昂贵的 Chromium 进程，同时让每条 UI 测试拥有隔离的 Cookie、localStorage 和页面状态。
 - Codex 沙箱当前无法读取 `%LOCALAPPDATA%\ms-playwright` 目录，但学习者本地已确认 Chromium 可启动；实际验收以学习者终端输出为准。
 - UI 定位必须优先集中在页面对象/基础页面层，测试用例不直接重复编写 CSS/XPath；等待使用 Playwright 的显式断言，不使用固定 `sleep`。
-- 当前浏览器 fixtures 已使用 `headless=True`，但仍保留 `slow_mo=1000`；并行 UI 与 CI 前必须改为 `slow_mo=0`。
-- API 测试可以并行，UI 测试暂不放进 xdist 全量并行；后续需要单独设计 UI 并行/串行策略。
+- 当前浏览器 fixtures 已使用 `headless=True`、`slow_mo=0`。
+- API 测试与非 `serial` UI 测试可通过 xdist 并行；关键 UI 与 E2E 流程必须标记 `serial`，进入独立串行通道。
 - UI 失败 hook 只能附加截图，不能改变原测试结果；截图异常必须被捕获并单独记录。
 - pytest-rerunfailures 只能作用于测试失败；fixture setup/teardown 错误不能被当作普通测试调用失败来重试，外部环境是否可用仍需 CI 健康检查前置保障。
 - `automation/tests/test_rerun_policy_demo.py` 已删除，不再是测试阻断项。
@@ -371,23 +371,22 @@
 - Codex 沙箱进程仍无权访问 Docker Desktop 命名管道，因此 Docker 构建与 Compose 命令需在学习者 PowerShell 中执行。
 - 根目录存在单独的 `pyproject.toml`/`uv.lock`，但自动化测试镜像必须以 `automation/pyproject.toml` 与 `automation/uv.lock` 为依赖来源。
 - Playwright UI 容器必须以无头模式运行，并安装 Chromium 及系统依赖；容器内不可访问宿主机的 `127.0.0.1:8000`。
-- Docker 容器中的 `AUTOMATION_BASE_URL=http://app:8000` 与 `AUTOMATION_TIMEOUT_SECONDS=15` 是合法覆盖，配置接线测试必须考虑环境变量，而不是始终断言 YAML 默认值。
+- Docker 容器中的 `AUTOMATION_BASE_URL=http://172.30.0.10:8000` 与 `AUTOMATION_TIMEOUT_SECONDS=15` 是合法覆盖，配置接线测试必须考虑环境变量，而不是始终断言 YAML 默认值。
 - Compose 主机名方案中 Chromium 对 `http://app:8000` 报 `ERR_SSL_PROTOCOL_ERROR`；已改用静态 IP `http://172.30.0.10:8000` 并验收通过，当前不再使用 `app` 主机名作为测试 base URL。
-- 根目录执行 `ruff check .` 会把 FastAPI 路由中的 `Depends(...)` 默认参数判定为 B008；这是项目应用层的 FastAPI 惯用写法。`ruff check app --ignore B008` 已通过，后续可在根 Ruff 配置对 `app/backend/**/*.py` 做 B008 per-file ignore，或继续只检查 `automation/`。
 - `docker compose ps` 为空表示当前未启动服务，不等于 Compose 配置失败；执行测试前需要先启动 app。
 - 根目录另有 `pyproject.toml`/`uv.lock` uv 工程，但 `automation/` 才是自动化框架的独立 uv 项目；Docker 设计必须以 `automation/pyproject.toml` 与 `automation/uv.lock` 为测试镜像依赖来源，避免误用根项目依赖。
 - GitHub remote 和 Actions 已配置并成功触发首次运行。
-- 根目录 Ruff 的 B008 per-file ignore 尚未加入根 `pyproject.toml`；`ruff check .` 当前对 FastAPI `Depends()` 报告 6 个 B008，阻断 CI 后续步骤。
-- Compose 三条 pytest 命令共享 `pytest.ini` 的 `--html=reports/report.html`，后运行通道会覆盖前一个 HTML 报告；该文件从设计上不代表完整测试集。
+- 根目录 `pyproject.toml` 已为 `app/backend/*.py` 和 `app/backend/routers/*.py` 配置 B008 per-file ignore，`ruff check .` 可通过。
+- Compose 三个测试通道已分别输出 `report-parallel.html`、`report-serial.html`、`report-smoke.html`；完整 Allure 结果仍以聚合的 `docker-allure/` 为准。
 - Allure `docker-allure/` 是原始结果目录，不是可直接双击查看的静态 HTML；需要使用 `allure serve` 或 `allure generate`。
-- `publish-allure` 当前写死查找 `downloaded/automation/reports/docker-allure`。`actions/upload-artifact` 会按实际上传文件的共同根目录重组路径，且空 screenshots 目录不会进入 artifact，因此常见实际路径是 `downloaded/docker-allure` 或 `downloaded/reports/docker-allure`，导致 Allure 生成步骤进入“没有原始结果”的 fallback。
+- `publish-allure` 已通过 `find downloaded -type d -name docker-allure` 动态定位原始结果，不再依赖 artifact 解压后的固定层级。
 - Faker 生成的数据必须继续包含 UUID 后缀或等价唯一标识，不能只依赖随机单词；pytest-xdist 多 worker 与重复运行都需要避免用户名/订单标题碰撞。
-- 数据生成器只生成输入数据，不负责注册、创建订单和清理；数据准备与清理将在后续 fixture/db_client 课程完成。
+- 数据生成器只生成输入数据；测试数据注册、订单创建与用户/session/订单清理已由 fixtures 和 `DBClient` 完成。
 
 ## 下一步计划
 
-1. 完成阶段六第六课：实现 mock/stub 测试并验证无需真实服务即可运行。
-2. 第六课通过后建立 UI 与 API 混合用户旅程。
+1. 完成阶段六第七课：建立 UI 造数与 API 契约校验、UI 回显验证的混合用户旅程。
+2. 验证用户清理和订单清理后无残留数据。
 3. 完成阶段六总验收并提交。
 
 ## 重要变更
@@ -440,5 +439,6 @@
 - 阶段六第二节课完成：动态用户与订单 fixtures、API 创建和 teardown 删除/404 验证落地，提交为 `9806d1c`。
 - 阶段六第三节课完成：DBClient、数据库路径、用户/session/订单清理和 Compose 数据卷共享落地，提交为 `855bdd0`。
 - 阶段六第四节课完成：TokenManager 缓存、失效检测和重新登录刷新落地，提交为 `e888ec6`。
-- 阶段六第五节课完成：JSON Schema 响应契约工具、三份 schema 和 4 条契约测试落地；当前尚未提交。
-- 阶段六第六节课开始：准备用 MockTransport 与 Stub/Mock 隔离网络和鉴权依赖。
+- 阶段六第五节课完成：JSON Schema 响应契约工具、三份 schema 和 4 条契约测试落地，提交为 `01bfaa1`。
+- 阶段六第六节课完成：APIClient 支持注入 MockTransport，Stub/Mock 单元测试验证网络隔离、token 刷新与调用契约，提交为 `41f8f76`。
+- 阶段六第七节课待开始：建立 UI 造数、API 校验、UI 验证的混合用户旅程。
