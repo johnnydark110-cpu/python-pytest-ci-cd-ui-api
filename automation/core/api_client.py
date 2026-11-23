@@ -30,6 +30,7 @@ class APIClient:
         timeout: float | httpx.Timeout = DEFAULT_TIMEOUT_SECONDS,
         default_headers: Mapping[str, str] | None = None,
         verify_ssl: bool = True,
+        transport: httpx.BaseTransport | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
@@ -44,6 +45,7 @@ class APIClient:
             timeout=timeout,
             headers=headers,
             verify=verify_ssl,
+            transport=transport,
         )
 
     def request(
