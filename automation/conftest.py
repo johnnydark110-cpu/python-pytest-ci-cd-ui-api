@@ -8,7 +8,11 @@ from typing import Any
 import pytest
 from playwright.sync_api import BrowserContext, Page
 
-from config import Settings
+from config import (
+    ExecutionProfile,
+    Settings,
+    resolve_execution_profile,
+)
 from core import (
     APIClient,
     BrowserManager,
@@ -34,9 +38,69 @@ def pytest_addoption(parser) -> None:
         "--env",
         action="store",
         default="dev",
-        choices=("dev", "staging"),
+        choices=("dev", "staging", "prod"),
         help="选择自动化测试环境配置，默认 dev",
     )
+    parser.addoption(
+        "--suite",
+        action="store",
+        default=None,
+        choices=("full", "regression", "smoke"),
+        help="选择执行档位；未指定时使用环境默认档位",
+    )
+
+
+def _resolve_execution_profile(
+    config: pytest.Config,
+) -> ExecutionProfile:
+    """从命令行解析当前环境和执行档位。"""
+    return resolve_execution_profile(
+        environment=config.getoption("--env"),
+        requested_suite=config.getoption("--suite"),
+    )
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """在收集测试前拒绝不安全的环境与档位组合。"""
+    try:
+        _resolve_execution_profile(config)
+    except ValueError as exc:
+        raise pytest.UsageError(str(exc)) from exc
+
+
+def pytest_report_header(config: pytest.Config) -> list[str]:
+    """在 pytest 头部显示最终执行策略。"""
+    profile = _resolve_execution_profile(config)
+
+    return [
+        f"automation environment: {profile.environment}",
+        f"automation suite: {profile.suite}",
+    ]
+
+
+def pytest_collection_modifyitems(
+    config: pytest.Config,
+    items: list[pytest.Item],
+) -> None:
+    """根据执行档位取消选择不适用于当前环境的测试。"""
+    profile = _resolve_execution_profile(config)
+
+    if profile.marker is None:
+        return
+
+    selected: list[pytest.Item] = []
+    deselected: list[pytest.Item] = []
+
+    for item in items:
+        if item.get_closest_marker(profile.marker) is None:
+            deselected.append(item)
+        else:
+            selected.append(item)
+
+    if deselected:
+        config.hook.pytest_deselected(items=deselected)
+
+    items[:] = selected
 
 
 @pytest.fixture(scope="session")

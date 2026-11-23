@@ -2,9 +2,9 @@
 
 ## 当前状态
 
-- 当前阶段：阶段 6（测试数据、鉴权、契约与混合场景）
+- 当前阶段：阶段 7（线上化加固与运营）
 - 更新时间：2026-11-23
-- 状态：阶段六第六节课已完成并经学习者确认，代码已提交；准备进入阶段六第七节课，建立“UI 造数 + API 校验 + UI 验证”的混合用户旅程
+- 状态：阶段七第一节课已完成并经学习者确认，环境分级与执行门禁功能通过；准备进入第二节课，实现只读开关与 API 写操作阻断
 
 ## 项目目标
 
@@ -325,12 +325,35 @@
   - 使用 `unittest.mock.Mock(spec=AuthService)` 验证 `get_token()` 调用次数和关键字参数。
   - 单元测试专项 3 passed，完整测试基线 57 passed。
   - 代码已提交为 `41f8f76 使用mock/stub隔离外部依赖`；提交后 `master` 与 `origin/master` 同步，工作区干净。
+- 阶段六第七节课已完成并经学习者确认：
+  - 创建 `tests/e2e/__init__.py` 与 `tests/e2e/test_user_journey.py`，建立 UI 与 API 混合用户旅程。
+  - 通过 UI 登录并创建订单，通过 API 列表和详情接口校验订单字段。
+  - 使用 `order.json`、`order_list.json` 校验 API 响应契约。
+  - 通过 UI 搜索确认订单回显，再通过 API 删除订单。
+  - 删除后通过 API 404、`DBClient.order_exists()` 和 UI 订单消失三重确认无残留。
+  - 旅程标记为 `regression + serial`，进入 Compose 的串行通道。
+  - E2E 专项验收通过，代码已提交为 `fb941f8`；提交后 `master` 与 `origin/master` 同步，工作区干净。
+- 阶段六总验收已完成并经学习者确认：
+  - 混合 E2E 连续三轮通过。
+  - 测试用户、session 和订单清理前后数量一致，无新增残留数据。
+  - JSON Schema 契约测试通过，字段类型变化可被捕获。
+  - token 缓存复用和 session 失效后的自动刷新通过。
+  - 本地完整回归 58 passed。
+  - Docker Compose 三通道 55 + 2 + 1 合计 58 项通过。
+  - 阶段六正式完成，下一阶段为阶段七「线上化加固与运营」。
+- 阶段七第一节课已完成并经学习者确认：
+  - 新增 `config/execution_profile.py`，集中定义 `dev`、`staging`、`prod` 的默认执行档位和允许档位。
+  - `dev` 默认 `full`，`staging` 默认 `regression`，`prod` 默认且只允许 `smoke`。
+  - `conftest.py` 新增 `--suite`，在收集阶段拒绝生产环境执行 regression/full，并按档位取消选择不适用测试。
+  - `Settings` 已支持 `prod`，新增占位配置 `config/prod.yaml`，使用不可解析的 `prod.example.invalid` 域名。
+  - 新增 6 条执行策略单元测试；生产 smoke 6 passed，开发全量 64 passed，Docker 三通道 61 + 2 + 1 合计 64 项通过。
+  - 第一课代码尚未提交；当前工作区包含第一课新增/修改文件和持续维护的 `docs/project-memory.md`。
 
 ## 待办
 
-- 完成阶段六第七节课：创建 `tests/e2e/test_user_journey.py`，打通 UI 造数、API 校验和 UI 验证。
-- 完成阶段六总验收：E2E 稳定通过、用例结束后无残留数据、JSON Schema 可捕获字段变化、token 失效可自动刷新。
-- 阶段六总验收通过后提交全部成果，再进入阶段七。
+- 完成阶段七第二节课：增加配置级 `read_only` 开关，并在 `APIClient` 层阻止 POST、PUT、PATCH、DELETE 写请求。
+- 后续实现流量染色、限流与熔断。
+- 建立 trace_id、flaky 管理、失败聚类和运行手册。
 
 ## 项目结构快照
 
@@ -385,9 +408,9 @@
 
 ## 下一步计划
 
-1. 完成阶段六第七课：建立 UI 造数与 API 契约校验、UI 回显验证的混合用户旅程。
-2. 验证用户清理和订单清理后无残留数据。
-3. 完成阶段六总验收并提交。
+1. 完成只读开关与写操作拦截，作为生产 smoke 之外的第二道保护。
+2. 增加流量染色、限流与熔断能力。
+3. 建立 trace_id、flaky 治理、报告趋势和运行手册。
 
 ## 重要变更
 
@@ -441,4 +464,7 @@
 - 阶段六第四节课完成：TokenManager 缓存、失效检测和重新登录刷新落地，提交为 `e888ec6`。
 - 阶段六第五节课完成：JSON Schema 响应契约工具、三份 schema 和 4 条契约测试落地，提交为 `01bfaa1`。
 - 阶段六第六节课完成：APIClient 支持注入 MockTransport，Stub/Mock 单元测试验证网络隔离、token 刷新与调用契约，提交为 `41f8f76`。
-- 阶段六第七节课待开始：建立 UI 造数、API 校验、UI 验证的混合用户旅程。
+- 阶段六第七节课完成：UI 造数、API 契约校验、UI 回显与跨层清理形成混合用户旅程，提交为 `fb941f8`。
+- 阶段六总验收完成：本地 58 passed、Docker 三通道 58 项、E2E 连续三轮、契约与 token 生命周期、数据清理均通过。
+- 阶段七第一节课完成：新增环境与执行档位集中策略，生产环境默认且只允许 smoke，预发拒绝 full，开发可执行全量。
+- 阶段七第二节课待开始：加入配置级只读开关与 HTTP 写请求阻断。

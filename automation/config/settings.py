@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Literal
 
 import yaml
 from pydantic import AnyHttpUrl, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from .execution_profile import EnvironmentName
 
 DEFAULT_DATABASE_PATH = Path(__file__).resolve().parents[2] / "app" / "data" / "app.db"
 
@@ -22,7 +23,7 @@ class Settings(BaseSettings):
         extra="forbid",
     )
 
-    environment: Literal["dev", "staging"]
+    environment: EnvironmentName
     base_url: AnyHttpUrl
     timeout_seconds: float = Field(
         default=10.0,

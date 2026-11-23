@@ -24,6 +24,11 @@ EXPECTED_CONFIGS = {
         "timeout_seconds": 20.0,
         "verify_ssl": True,
     },
+    "prod": {
+        "base_url": "https://prod.example.invalid",
+        "timeout_seconds": 15.0,
+        "verify_ssl": True,
+    },
 }
 
 
