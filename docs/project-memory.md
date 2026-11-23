@@ -4,7 +4,7 @@
 
 - 当前阶段：阶段 7（线上化加固与运营）
 - 更新时间：2026-11-23
-- 状态：阶段七第一节课已完成并经学习者确认，环境分级与执行门禁功能通过；准备进入第二节课，实现只读开关与 API 写操作阻断
+- 状态：阶段七第二节课已完成并经学习者确认，环境门禁与只读写操作阻断均通过；准备进入第三节课，实现流量染色与 trace_id 贯穿请求日志
 
 ## 项目目标
 
@@ -347,13 +347,23 @@
   - `conftest.py` 新增 `--suite`，在收集阶段拒绝生产环境执行 regression/full，并按档位取消选择不适用测试。
   - `Settings` 已支持 `prod`，新增占位配置 `config/prod.yaml`，使用不可解析的 `prod.example.invalid` 域名。
   - 新增 6 条执行策略单元测试；生产 smoke 6 passed，开发全量 64 passed，Docker 三通道 61 + 2 + 1 合计 64 项通过。
-  - 第一课代码尚未提交；当前工作区包含第一课新增/修改文件和持续维护的 `docs/project-memory.md`。
+  - 代码已提交为 `a5e2dd7 建立dev、staging、prod环境与full、regression、smoke执行档位...`。
+- 阶段七第二节课已完成并经学习者确认：
+  - `Settings` 增加必填 `read_only`，dev/staging 明确允许写，prod 明确只读。
+  - `APIClient` 默认采用失败关闭策略，`read_only=True`，只有显式关闭后才允许写请求。
+  - 在 transport 调用前阻止 POST、PUT、PATCH、DELETE；GET、HEAD、OPTIONS 保持允许。
+  - 新增 `ReadOnlyViolationError`，区分框架安全拦截、网络传输失败和普通 HTTP 响应错误。
+  - 新增 5 条 MockTransport 只读策略测试，证明写请求被拦截时尚未进入网络层。
+  - 修正 `api_client.py` 中保留 `record_request_exchange` 导入，避免正常响应记录阶段 NameError。
+  - 专项测试、生产 smoke、开发全量 69 passed、Docker 三通道 66 + 2 + 1 合计 69 项均通过。
+  - 代码已提交为 `cd3b6e0 为每个环境增加 read_only 配置...`；当前工作区干净，本地 `master` 比 `origin/master` 领先 2 个提交。
 
 ## 待办
 
-- 完成阶段七第二节课：增加配置级 `read_only` 开关，并在 `APIClient` 层阻止 POST、PUT、PATCH、DELETE 写请求。
-- 后续实现流量染色、限流与熔断。
-- 建立 trace_id、flaky 管理、失败聚类和运行手册。
+- 完成阶段七第三节课：为每条测试生成 trace_id，并通过统一请求头实现流量染色。
+- 后续实现限流与熔断。
+- 建立 flaky 管理、失败聚类、报告趋势和运行手册。
+- 将当前领先远程的 2 个阶段七代码提交推送到 `origin/master`。
 
 ## 项目结构快照
 
@@ -408,9 +418,9 @@
 
 ## 下一步计划
 
-1. 完成只读开关与写操作拦截，作为生产 smoke 之外的第二道保护。
-2. 增加流量染色、限流与熔断能力。
-3. 建立 trace_id、flaky 治理、报告趋势和运行手册。
+1. 完成流量染色与 trace_id，使同一测试中的请求、日志、Allure 和失败上下文可以关联。
+2. 增加限流与熔断能力。
+3. 建立 flaky 治理、报告趋势和运行手册。
 
 ## 重要变更
 
@@ -467,4 +477,5 @@
 - 阶段六第七节课完成：UI 造数、API 契约校验、UI 回显与跨层清理形成混合用户旅程，提交为 `fb941f8`。
 - 阶段六总验收完成：本地 58 passed、Docker 三通道 58 项、E2E 连续三轮、契约与 token 生命周期、数据清理均通过。
 - 阶段七第一节课完成：新增环境与执行档位集中策略，生产环境默认且只允许 smoke，预发拒绝 full，开发可执行全量。
-- 阶段七第二节课待开始：加入配置级只读开关与 HTTP 写请求阻断。
+- 阶段七第二节课完成：增加配置级只读开关、失败关闭的 APIClient 默认值和写请求安全阻断，提交为 `cd3b6e0`。
+- 阶段七第三节课待开始：增加每次测试唯一的 trace_id、流量染色请求头和日志关联。

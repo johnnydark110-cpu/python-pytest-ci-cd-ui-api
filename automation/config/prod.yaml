@@ -3,3 +3,4 @@ base_url: https://prod.example.invalid
 timeout_seconds: 15
 verify_ssl: true
 read_only: true
+traffic_tag: automation.prod

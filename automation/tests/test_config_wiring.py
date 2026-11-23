@@ -30,18 +30,21 @@ EXPECTED_CONFIGS = {
         "timeout_seconds": 10.0,
         "verify_ssl": True,
         "read_only": False,
+        "traffic_tag": "automation.dev",
     },
     "staging": {
         "base_url": "http://127.0.0.1:8001",
         "timeout_seconds": 20.0,
         "verify_ssl": True,
         "read_only": False,
+        "traffic_tag": "automation.staging",
     },
     "prod": {
         "base_url": "https://prod.example.invalid",
         "timeout_seconds": 15.0,
         "verify_ssl": True,
         "read_only": True,
+        "traffic_tag": "automation.prod",
     },
 }
 
@@ -80,12 +83,17 @@ def test_cli_environment_configures_fixtures(
         "AUTOMATION_READ_ONLY",
         expected["read_only"],
     )
+    expected_traffic_tag = os.getenv(
+        "AUTOMATION_TRAFFIC_TAG",
+        expected["traffic_tag"],
+    )
 
     assert settings.environment == expected_environment
     assert str(settings.base_url).rstrip("/") == expected_base_url
     assert settings.timeout_seconds == expected_timeout
     assert settings.verify_ssl is expected_verify_ssl
     assert settings.read_only is expected_read_only
+    assert settings.traffic_tag == expected_traffic_tag
 
     database_path_value = os.getenv("AUTOMATION_DATABASE_PATH")
     expected_database_path = (

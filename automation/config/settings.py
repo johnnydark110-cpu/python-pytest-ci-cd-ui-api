@@ -32,6 +32,11 @@ class Settings(BaseSettings):
     )
     verify_ssl: bool = True
     read_only: bool
+    traffic_tag: str = Field(
+        default="automation",
+        min_length=1,
+        max_length=64,
+    )
     database_path: Path = DEFAULT_DATABASE_PATH
 
     @classmethod

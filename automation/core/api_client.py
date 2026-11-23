@@ -14,6 +14,7 @@ from .allure_utils import attach_redacted_json
 from .exceptions import APITransportError, ReadOnlyViolationError
 from .logger import format_log_data, get_logger
 from .request_context import record_request_exchange
+from .trace_context import get_trace_context
 
 logger = get_logger(__name__)
 
@@ -84,9 +85,14 @@ class APIClient:
 
         started_at = perf_counter()
 
+        trace = get_trace_context()
+        request_headers = dict(headers) if headers is not None else {}
+
+        if trace is not None:
+            request_headers.update(trace.headers)
+
         effective_headers = dict(self._client.headers)
-        if headers is not None:
-            effective_headers.update(headers)
+        effective_headers.update(request_headers)
 
         request_context = {
             "method": method,
@@ -94,6 +100,8 @@ class APIClient:
             "params": params,
             "headers": effective_headers,
             "body": json_body,
+            "trace_id": trace.trace_id if trace is not None else None,
+            "traffic_tag": trace.traffic_tag if trace is not None else None,
         }
         # logger.info(
         #     "API request details:\n%s",
@@ -105,8 +113,8 @@ class APIClient:
             request_options["params"] = params
         if json_body is not None:
             request_options["json"] = json_body
-        if headers is not None:
-            request_options["headers"] = dict(headers)
+        if request_headers:
+            request_options["headers"] = request_headers
 
         with allure.step(f"HTTP {method} {normalized_path}"):
             logger.info(

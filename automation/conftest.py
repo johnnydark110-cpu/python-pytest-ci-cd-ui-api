@@ -22,8 +22,11 @@ from core import (
     configure_logging,
     get_logger,
     get_request_history,
+    get_trace_context,
     start_request_history,
+    start_trace_context,
     stop_request_history,
+    stop_trace_context,
 )
 from pages import BasePage
 from services import AuthService, OrderService, TokenManager
@@ -115,15 +118,25 @@ def browser_manager() -> Iterator[BrowserManager]:
 
 @pytest.fixture(scope="function")
 def browser_context(
-    browser_manager: BrowserManager, base_url: str, settings: Settings
+    browser_manager: BrowserManager,
+    base_url: str,
+    settings: Settings,
+    test_trace: None,
 ) -> Iterator[BrowserContext]:
-    """每条测试使用独立BrowserContext"""
+    """每条测试使用独立BrowserContext，并注入染色请求头。"""
     context = browser_manager.new_context(
         base_url=base_url,
         ignore_https_errors=not settings.verify_ssl,
     )
-    yield context
-    context.close()
+
+    trace = get_trace_context()
+    if trace is not None:
+        context.set_extra_http_headers(trace.headers)
+
+    try:
+        yield context
+    finally:
+        context.close()
 
 
 @pytest.fixture(scope="function")
@@ -135,8 +148,21 @@ def page(browser_context: BrowserContext) -> Iterator[Page]:
 
 
 @pytest.fixture(autouse=True)
-def request_history_capture() -> Iterator[None]:
-    """每条测试开始前创建请求历史，结束后清理。"""
+def test_trace(settings: Settings) -> Iterator[None]:
+    """每条测试开始时生成独立 trace_id。"""
+    token = start_trace_context(
+        traffic_tag=settings.traffic_tag,
+    )
+
+    try:
+        yield
+    finally:
+        stop_trace_context(token)
+
+
+@pytest.fixture(autouse=True)
+def request_history_capture(test_trace: None) -> Iterator[None]:
+    """每条测试开始前创建独立的请求历史，结束后清理。"""
     start_request_history()
     yield
     stop_request_history()
@@ -190,12 +216,15 @@ def pytest_runtest_makereport(item, call):
     history = get_request_history()
     if not history:
         return
+    trace = get_trace_context()
 
     attach_redacted_json(
         name=f"失败上下文（{report.when}）",
         data={
             "test": item.nodeid,
             "phase": report.when,
+            "trace_id": trace.trace_id if trace is not None else None,
+            "traffic_tag": trace.traffic_tag if trace is not None else None,
             "request_count": len(history),
             "exchanges": history,
         },

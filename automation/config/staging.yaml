@@ -3,3 +3,4 @@ base_url: http://127.0.0.1:8001
 timeout_seconds: 20
 verify_ssl: true
 read_only: false
+traffic_tag: automation.staging

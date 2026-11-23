@@ -7,10 +7,21 @@ import logging
 from collections.abc import Mapping
 from typing import Any
 
+from .trace_context import get_trace_id
+
 PACKAGE_LOGGER_NAME = "automation"
-LOG_FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+LOG_FORMAT = "%(asctime)s | %(levelname)s | trace=%(trace_id)s | %(name)s | %(message)s"
 DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 REDACTED_VALUE = "***REDACTED***"
+
+
+class TraceIdFilter(logging.Filter):
+    """向每条日志记录注入当前测试的 trace_id。"""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.trace_id = get_trace_id() or "-"
+        return True
+
 
 _SENSITIVE_KEYS = frozenset(
     {
@@ -27,6 +38,17 @@ _SENSITIVE_KEYS = frozenset(
 )
 
 
+def _ensure_trace_filter(handler: logging.Handler) -> None:
+    """确保 handler 只添加一次 trace 过滤器。"""
+    if any(
+        isinstance(existing_filter, TraceIdFilter)
+        for existing_filter in handler.filters
+    ):
+        return
+
+    handler.addFilter(TraceIdFilter())
+
+
 def configure_logging(level: int | str = logging.INFO) -> None:
     """配置测试框架统一日志；重复调用不会添加重复 handler。"""
     package_logger = logging.getLogger(PACKAGE_LOGGER_NAME)
@@ -34,6 +56,8 @@ def configure_logging(level: int | str = logging.INFO) -> None:
     package_logger.propagate = False
 
     if package_logger.handlers:
+        for existing_handler in package_logger.handlers:
+            _ensure_trace_filter(existing_handler)
         return
 
     handler = logging.StreamHandler()
@@ -43,6 +67,7 @@ def configure_logging(level: int | str = logging.INFO) -> None:
             datefmt=DATE_FORMAT,
         )
     )
+    _ensure_trace_filter(handler)
     package_logger.addHandler(handler)
 
 
