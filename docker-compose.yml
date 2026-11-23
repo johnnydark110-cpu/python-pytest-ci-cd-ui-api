@@ -58,7 +58,7 @@ services:
       - |
         set -eu
 
-        rm -f reports/report*.html
+        rm -f reports/report*.html reports/flaky-*.json
 
         uv run pytest \
           -m "regression and not serial" \

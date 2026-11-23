@@ -4,7 +4,7 @@
 
 - 当前阶段：阶段 7（线上化加固与运营）
 - 更新时间：2026-11-23
-- 状态：阶段七第四节课已完成并经学习者确认，客户端请求限流与传输失败熔断已通过；准备进入第五节课，建立 flaky 分类、登记与重试结果治理
+- 状态：阶段七第五节课已完成并经学习者确认，失败分类、known_flaky 门禁和重试汇总已通过；准备进入第六节课，建立失败聚类与跨运行趋势
 
 ## 项目目标
 
@@ -374,11 +374,19 @@
   - dev 不限速，staging 请求间隔 0.2 秒，prod 请求间隔 1 秒；各环境熔断阈值和恢复窗口已配置。
   - 新增 6 条请求保护单元测试，完整本地基线提升到 79 passed。
   - 代码已提交为 `a72c004 在APIClient层增加每个worker内的最小请求间隔...`，并已同步到 `origin/master`。
+- 阶段七第五节课已完成并经学习者确认：
+  - 创建 `core/flaky_policy.py`，实现 environment、configuration、product_assertion、framework_or_test、unknown 五类失败分类。
+  - `AssertionError` 被标记为需要分诊的 `product_assertion`，不自动断言为产品缺陷。
+  - 新增 `known_flaky` marker 门禁，强制 issue、owner、expires、reason，过期后阻断测试收集。
+  - 通过 `FlakyAttemptLedger` 汇总 rerun 结果，重试后通过识别为 flaky，最终失败保持 failed。
+  - Allure 失败附件增加分类，主进程输出 `flaky-summary.json`，Docker 三通道分别输出 parallel/serial/smoke 汇总。
+  - 新增 9 条 flaky 治理测试，完整本地基线提升到 88 passed；Docker 三通道 85 + 2 + 1 合计 88 项通过。
+  - 代码已提交为 `d18953b 建立失败分类、known_flaky登记门禁和重试结果汇总...`；工作区干净，本地 `master` 比 `origin/master` 领先 1 个提交。
 
 ## 待办
 
-- 完成阶段七第五节课：建立失败分类、known_flaky 登记校验和重试结果汇总。
-- 后续实现失败聚类、趋势监控和运行手册。
+- 完成阶段七第六节课：聚合三个测试通道，按失败类别、模块和 issue 聚类，并维护跨运行趋势历史。
+- 后续沉淀运行手册与协作规范。
 - 保持未解决 flaky 用例具备 issue、owner、过期时间，并在到期后阻断收集。
 
 ## 项目结构快照
@@ -434,9 +442,9 @@
 
 ## 下一步计划
 
-1. 将环境故障、产品断言、配置错误和框架错误建立稳定分类。
-2. 通过 `known_flaky` marker 登记临时不稳定用例并强制过期治理。
-3. 汇总 rerun 结果，输出 flaky 运行时报告，再进入失败聚类与趋势监控。
+1. 将 parallel、serial、smoke 三个 flaky 汇总合并为单次运行结果。
+2. 按类别、模块和 known_flaky issue 生成失败聚类，并维护历史趋势。
+3. 在 GitHub Actions 中缓存历史并输出可读摘要，再进入运行手册。
 
 ## 重要变更
 
@@ -496,4 +504,5 @@
 - 阶段七第二节课完成：增加配置级只读开关、失败关闭的 APIClient 默认值和写请求安全阻断，提交为 `cd3b6e0`。
 - 阶段七第三节课完成：增加每次测试唯一的 trace_id、API/浏览器流量染色、日志与报告关联，提交为 `82a44d1`。
 - 阶段七第四节课完成：增加客户端最小请求间隔、三态熔断器和重试流量保护，提交为 `a72c004` 并推送到远程。
-- 阶段七第五节课待开始：增加失败分类、known_flaky 元数据门禁和重试结果汇总。
+- 阶段七第五节课完成：增加失败分类、known_flaky 元数据门禁、重试汇总和分通道 flaky JSON，提交为 `d18953b`。
+- 阶段七第六节课待开始：聚合测试通道，建立失败聚类和跨运行趋势历史。

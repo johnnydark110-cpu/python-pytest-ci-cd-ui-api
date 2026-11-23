@@ -50,6 +50,14 @@ jobs:
         run: |
           mkdir -p automation/reports
           mkdir -p automation/screenshots
+      
+      - name: Restore analytics history
+        uses: actions/cache/restore@v4
+        with:
+          path: automation/reports/analytics/history.json
+          key: automation-analytics-${{ github.ref_name }}-${{ github.run_id }}
+          restore-keys: |
+            automation-analytics-${{ github.ref_name }}-
 
       - name: Build Docker images
         run: |
@@ -65,6 +73,33 @@ jobs:
         id: tests
         run: |
           docker compose run --rm automation
+
+      - name: Build failure analytics
+        id: analytics
+        if: always()
+        run: |
+          if find automation/reports -maxdepth 1 \
+            -type f -name 'flaky-*.json' | grep -q .; then
+
+            docker compose run --rm --no-deps automation \
+              uv run python report_analytics.py \
+              --report-dir reports \
+              --history reports/analytics/history.json \
+              --output reports/analytics/dashboard.json \
+              --summary-md reports/analytics/summary.md \
+              --run-id "$GITHUB_RUN_ID" \
+              --commit "$GITHUB_SHA" \
+              --branch "$GITHUB_REF_NAME"
+          else
+            echo "没有可分析的 flaky 报告，跳过分析。"
+          fi
+      
+      - name: Save analytics history
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: automation/reports/analytics/history.json
+          key: automation-analytics-${{ github.ref_name }}-${{ github.run_id }}
 
       - name: Collect Docker logs
         if: always()
@@ -97,6 +132,17 @@ jobs:
           echo "- 分支：\`${GITHUB_REF_NAME}\`" >> "$GITHUB_STEP_SUMMARY"
           echo "- 原始报告：[下载 artifacts](${REPORT_URL})" >> "$GITHUB_STEP_SUMMARY"
           echo "- Actions：[查看运行](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID})" >> "$GITHUB_STEP_SUMMARY"
+      
+      - name: Append analytics summary
+        if: always()
+        run: |
+          SUMMARY_FILE="automation/reports/analytics/summary.md"
+
+          if [ -f "$SUMMARY_FILE" ]; then
+            cat "$SUMMARY_FILE" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "没有分析摘要可追加。"
+          fi
 
       - name: Notify Slack on failure
         if: failure() && env.SLACK_WEBHOOK_URL != ''
