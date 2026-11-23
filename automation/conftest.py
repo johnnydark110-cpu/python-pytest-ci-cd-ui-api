@@ -17,8 +17,10 @@ from core import (
     APIClient,
     BrowserManager,
     DBClient,
+    FlakyAttemptLedger,
     attach_redacted_json,
     attach_screenshot,
+    classify_failure,
     configure_logging,
     get_logger,
     get_request_history,
@@ -27,6 +29,7 @@ from core import (
     start_trace_context,
     stop_request_history,
     stop_trace_context,
+    validate_known_flaky_metadata,
 )
 from pages import BasePage
 from services import AuthService, OrderService, TokenManager
@@ -34,6 +37,7 @@ from utils import OrderData, TestDataFactory
 
 CONFIG_DIR = Path(__file__).resolve().parent / "config"
 logger = get_logger(__name__)
+_FLAKY_LEDGER = FlakyAttemptLedger()
 
 
 def pytest_addoption(parser) -> None:
@@ -51,6 +55,12 @@ def pytest_addoption(parser) -> None:
         choices=("full", "regression", "smoke"),
         help="选择执行档位；未指定时使用环境默认档位",
     )
+    parser.addoption(
+        "--flaky-report",
+        action="store",
+        default="reports/flaky-summary.json",
+        help="flaky 汇总报告输出路径",
+    )
 
 
 def _resolve_execution_profile(
@@ -61,6 +71,24 @@ def _resolve_execution_profile(
         environment=config.getoption("--env"),
         requested_suite=config.getoption("--suite"),
     )
+
+
+def _get_known_flaky_metadata(
+    item: pytest.Item,
+) -> dict[str, str] | None:
+    """读取并校验当前测试的 known_flaky marker。"""
+    marker = item.get_closest_marker("known_flaky")
+
+    if marker is None:
+        return None
+
+    policy = validate_known_flaky_metadata(
+        issue=marker.kwargs.get("issue"),
+        owner=marker.kwargs.get("owner"),
+        expires=marker.kwargs.get("expires"),
+        reason=marker.kwargs.get("reason"),
+    )
+    return policy.to_dict()
 
 
 def pytest_configure(config: pytest.Config) -> None:
@@ -86,6 +114,11 @@ def pytest_collection_modifyitems(
     items: list[pytest.Item],
 ) -> None:
     """根据执行档位取消选择不适用于当前环境的测试。"""
+    for item in items:
+        try:
+            _get_known_flaky_metadata(item)
+        except ValueError as exc:
+            raise pytest.UsageError(f"{item.nodeid}: {exc}") from exc
     profile = _resolve_execution_profile(config)
 
     if profile.marker is None:
@@ -208,12 +241,30 @@ def pytest_runtest_makereport(item, call):
     outcome = yield
     report = outcome.get_result()
 
+    known_flaky = _get_known_flaky_metadata(item)
+    if known_flaky is not None:
+        report.automation_known_flaky = known_flaky
+
     if not report.failed:
         return
+
+    if call.excinfo is not None:
+        classification = classify_failure(call.excinfo.value)
+        report.automation_failure_classification = classification.to_dict()
+
+        attach_redacted_json(
+            name=f"失败分类（{report.when}）",
+            data={
+                "test": item.nodeid,
+                "phase": report.when,
+                "classification": classification.to_dict(),
+            },
+        )
 
     _attach_failure_screenshot(item, report)
 
     history = get_request_history()
+
     if not history:
         return
     trace = get_trace_context()
@@ -228,6 +279,25 @@ def pytest_runtest_makereport(item, call):
             "request_count": len(history),
             "exchanges": history,
         },
+    )
+
+
+def pytest_runtest_logreport(report: pytest.TestReport) -> None:
+    """把 call 结果及失败分类写入 flaky 汇总。"""
+    _FLAKY_LEDGER.record(
+        nodeid=report.nodeid,
+        outcome=report.outcome,
+        when=report.when,
+        classification=getattr(
+            report,
+            "automation_failure_classification",
+            None,
+        ),
+        known_flaky=getattr(
+            report,
+            "automation_known_flaky",
+            None,
+        ),
     )
 
 
@@ -396,3 +466,17 @@ def created_order(
 
         missing_response = order_service.get_order(order_id)
         assert missing_response.status_code == 404, "订单删除后仍可查询，数据清理未完成"
+
+
+def pytest_sessionfinish(
+    session: pytest.Session,
+    exitstatus: int,
+) -> None:
+    """主进程写入 flaky 汇总；xdist worker 不重复写文件。"""
+    del exitstatus
+
+    if hasattr(session.config, "workerinput"):
+        return
+
+    report_path = Path(session.config.getoption("--flaky-report"))
+    _FLAKY_LEDGER.write_json(report_path)

@@ -67,21 +67,24 @@ services:
           -q \
           --alluredir=reports/docker-allure \
           --clean-alluredir \
-          --html=reports/report-parallel.html
+          --html=reports/report-parallel.html \
+          --flaky-report=reports/flaky-parallel.json
 
         uv run pytest \
           -m serial \
           --env=dev \
           -q \
           --alluredir=reports/docker-allure \
-          --html=reports/report-serial.html
+          --html=reports/report-serial.html \
+          --flaky-report=reports/flaky-serial.json
 
         uv run pytest \
           -m "smoke and not regression" \
           --env=dev \
           -q \
           --alluredir=reports/docker-allure \
-          --html=reports/report-smoke.html
+          --html=reports/report-smoke.html \
+          --flaky-report=reports/flaky-smoke.json
     restart: "no"
 
 volumes:

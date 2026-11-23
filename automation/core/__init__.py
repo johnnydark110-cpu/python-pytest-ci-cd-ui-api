@@ -11,6 +11,13 @@ from .exceptions import (
     CircuitOpenError,
     ReadOnlyViolationError,
 )
+from .flaky_policy import (
+    FailureClassification,
+    FlakyAttemptLedger,
+    KnownFlakyPolicy,
+    classify_failure,
+    validate_known_flaky_metadata,
+)
 from .logger import configure_logging, get_logger, redact_data
 from .request_context import (
     get_request_history,
@@ -50,11 +57,15 @@ __all__ = [
     "CircuitBreaker",
     "CircuitOpenError",
     "DBClient",
+    "FailureClassification",
+    "FlakyAttemptLedger",
+    "KnownFlakyPolicy",
     "ReadOnlyViolationError",
     "RequestRateLimiter",
     "TraceContext",
     "attach_redacted_json",
     "attach_screenshot",
+    "classify_failure",
     "configure_logging",
     "get_logger",
     "get_request_history",
@@ -69,4 +80,5 @@ __all__ = [
     "stop_request_history",
     "stop_trace_context",
     "validate_json_contract",
+    "validate_known_flaky_metadata",
 ]
